@@ -1,0 +1,21 @@
+{
+  "root": true,
+  "ignorePatterns": ["node_modules/"],
+  "overrides": [
+    {
+      "files": ["*.ts"],
+      "rules": {
+        "@typescript-eslint/tslint/config": "off"
+      }
+    }
+  ],
+  "plugins": ["@typescript-eslint"],
+  "extends": ["plugin:@typescript-eslint/recommended", "prettier"],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "project": "tsconfig.json"
+  },
+  "rules": {
+    "prettier/prettier": "error"
+  }
+}

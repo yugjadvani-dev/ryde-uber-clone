@@ -1,0 +1,16 @@
+node_modules/
+coverage/
+build/
+dist/
+*.min.js
+*.min.css
+*.js.map
+*.css.map
+*.json
+*.md
+*.yml
+*.yaml
+*.txt
+*.lock
+*.gitignore
+.DS_Store
