@@ -6,10 +6,10 @@ import jwt from 'jsonwebtoken';
 // User signUp
 export const signUp = async (req: Request, res: Response): Promise<void> => {
     try {
-        const {firstName, lastName, email, password, isAdmin = false} = req.body; // Destructure email, password, and name from request body
+        const {firstname, lastname, email, password, is_admin = false} = req.body; // Destructure email, password, and name from request body
 
         // Input Validation
-        if (!firstName || !lastName || !email || !password) {
+        if (!firstname || !lastname || !email || !password) {
             res.status(400).json({
                 success: false,
                 message: 'All fields are required'
@@ -37,10 +37,9 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
 
         // Insert user info database
         const newUser = await pool.query(
-            'INSERT INTO users (firstName, lastName, email, password, isAdmin) VALUES ($1, $2, $3, $4, $5) RETURNING id, email, firstName, lastName',
-            [firstName, lastName, email, hashedPassword, isAdmin]
+            'INSERT INTO users (firstname, lastname, email, password, is_admin) VALUES ($1, $2, $3, $4, $5) RETURNING id, email, firstname, lastname',
+            [firstname, lastname, email, hashedPassword, is_admin]
         )
-        console.log("newUser",newUser)
 
         // Generate JWT token
         const token = jwt.sign(
@@ -68,7 +67,6 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
 export const signIn = async (req: Request, res: Response): Promise<void> => {
     try {
         const {email, password} = req.body; // Destructure email and password from request body
-        console.log("login", email, password)
 
         // Input Validation
         if (!email || !password) {
@@ -92,6 +90,50 @@ export const signIn = async (req: Request, res: Response): Promise<void> => {
             })
             return;
         }
+
+        // Check if user is verified
+        if (userExists.rows[0].is_verified === false) {
+            res.status(400).json({
+                success: false,
+                message: 'User is not verified'
+            })
+            return;
+        }
+
+        // Check is password correct
+        const isPasswordCorrect = await bcrypt.compare(password, userExists.rows[0].password);
+
+        if(!isPasswordCorrect) {
+            res.status(400).json({
+                success: false,
+                message: 'Incorrect password'
+            })
+            return;
+        }
+
+        // Generate JWT token
+        const token = jwt.sign(
+            {userId: userExists.rows[0].id},
+            process.env.JWT_SECRET as string,
+            {expiresIn: '24h'}
+        )
+
+        // Create safe user
+        const safeUser = {
+            id: userExists.rows[0].id,
+            email: userExists.rows[0].email,
+            firstname: userExists.rows[0].firstname,
+            lastname: userExists.rows[0].lastname,
+            is_admin: userExists.rows[0].is_admin
+        }
+
+        // Send response
+        res.status(200).json({
+            success: true,
+            message: 'User signed in successfully',
+            token,
+            user: safeUser
+        })
     } catch (error) {
         res.status(500).json({
             success: false,
