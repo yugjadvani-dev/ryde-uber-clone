@@ -1,7 +1,7 @@
 import { Request, Response } from "express"; // Import necessary types from express
 import pool from "../db/db";
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import {generateJwtToken} from "../utils/generate-jwt-token.utils";
 
 // User signUp
 export const signUp = async (req: Request, res: Response): Promise<void> => {
@@ -42,11 +42,7 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
         )
 
         // Generate JWT token
-        const token = jwt.sign(
-            {userId: newUser.rows[0].id},
-            process.env.JWT_SECRET as string,
-            {expiresIn: '24h'}
-        )
+        const token = generateJwtToken(newUser.rows[0].id);
 
         // Send response
         res.status(201).json({
@@ -58,7 +54,7 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
     } catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Something went wrong during signUp process please try again'
+            message: 'Something went wrong during signUp process, please try again!'
         })
     }
 }
@@ -77,16 +73,16 @@ export const signIn = async (req: Request, res: Response): Promise<void> => {
             return;
         }
 
-        // Check if user exists
+        // Check if user already exists
         const userExists = await pool.query(
             'SELECT * FROM users WHERE email = $1',
             [email]
-        );
+        )
 
-        if(!userExists.rows.length) {
+        if (userExists.rows.length > 0) {
             res.status(400).json({
                 success: false,
-                message: 'User not exist!'
+                message: 'User already exists'
             })
             return;
         }
@@ -112,11 +108,7 @@ export const signIn = async (req: Request, res: Response): Promise<void> => {
         }
 
         // Generate JWT token
-        const token = jwt.sign(
-            {userId: userExists.rows[0].id},
-            process.env.JWT_SECRET as string,
-            {expiresIn: '24h'}
-        )
+        const token = generateJwtToken(userExists.rows[0].id);
 
         // Create safe user
         const safeUser = {
@@ -137,7 +129,9 @@ export const signIn = async (req: Request, res: Response): Promise<void> => {
     } catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Something went wrong during login process please try again'
+            message: 'Something went wrong during login process, please try again!'
         })
     }
 }
+
+// TODO: User signOut, User forgotPassword, User resetPassword, User changePassword, User updateProfile, User deleteProfile, User verifyEmail, User resendVerificationEmail, User changeEmail
