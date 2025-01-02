@@ -1,7 +1,7 @@
 import { Request, Response } from "express"; // Import necessary types from express
 import pool from "../db/db";
 import bcrypt from 'bcrypt';
-import {generateAuthToken} from "../utils/generate-auth-token.utils";
+import {generateAuthToken} from "../utils/generateAuthToken.utils";
 
 /**
  * Handles user sign-up by creating a new user in the database.
