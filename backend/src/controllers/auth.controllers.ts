@@ -61,7 +61,7 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
             success: true,
             message: 'User signed up successfully',
             token,
-            user: newUser.rows[0]
+            data: newUser.rows[0]
         })
     } catch (error) {
         res.status(500).json({
@@ -146,7 +146,7 @@ export const signIn = async (req: Request, res: Response): Promise<void> => {
             success: true,
             message: 'User signed in successfully',
             token,
-            user: safeUser
+            data: safeUser
         })
     } catch (error) {
         res.status(500).json({
@@ -158,7 +158,11 @@ export const signIn = async (req: Request, res: Response): Promise<void> => {
 
 export const signOut = async (req: Request, res: Response): Promise<void> => {
     try {
-
+        res.status(200).json({
+            success: true,
+            data: null,
+            message: 'User signed out successfully'
+        })
     } catch (error) {
         res.status(500).json({
             success: false,
@@ -167,4 +171,4 @@ export const signOut = async (req: Request, res: Response): Promise<void> => {
     }
 }
 
-// TODO: User signOut, User forgotPassword, User resetPassword, User changePassword, User updateProfile, User deleteProfile, User verifyEmail, User resendVerificationEmail, User changeEmail
+// TODO: User forgotPassword, User resetPassword, User changePassword, User updateProfile, User deleteProfile, User verifyEmail, User resendVerificationEmail, User changeEmail
