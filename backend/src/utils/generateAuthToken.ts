@@ -1,4 +1,4 @@
-import jwt from "jsonwebtoken";
+import jwt from 'jsonwebtoken';
 
 /**
  * Generates a JSON Web Token (JWT) for the given user ID and admin status.
@@ -11,10 +11,8 @@ import jwt from "jsonwebtoken";
  * @returns A JSON Web Token (JWT) containing the user's ID and admin status
  */
 export const generateAuthToken = (userId: number, is_admin: boolean) => {
-    // Generate JWT token logic
-    return jwt.sign(
-        {userId: userId, is_admin: is_admin},
-        process.env.ACCESS_TOKEN_SECRET as string,
-        {expiresIn: process.env.ACCESS_TOKEN_EXPIRY}
-    );
+  // Generate JWT token logic
+  return jwt.sign({ userId: userId, is_admin: is_admin }, process.env.ACCESS_TOKEN_SECRET as string, {
+    expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
+  });
 };

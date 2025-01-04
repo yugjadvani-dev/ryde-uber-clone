@@ -1,10 +1,9 @@
-import {Request, Response} from "express";
-import pool from "../db/db";
+import { Request, Response } from 'express';
+import pool from '../db/db';
 import bcrypt from 'bcrypt';
-import {generateAuthToken} from "../utils/generateAuthToken";
-import asyncHandler from "../utils/asyncHandler";
-import uploadOnCloudinary from "../utils/cloudinary";
-import fs from 'fs'
+import { generateAuthToken } from '../utils/generateAuthToken';
+import asyncHandler from '../utils/asyncHandler';
+import uploadOnCloudinary from '../utils/cloudinary';
 
 /**
  * Handles user sign-up by creating a new user in the database.
@@ -19,59 +18,56 @@ import fs from 'fs'
  * @returns A Promise that resolves to void.
  */
 export const signUp = asyncHandler(async (req, res: Response): Promise<void> => {
-    const {firstname, lastname, email, password, is_admin = false} = req.body; // Destructure firstname, lastname, email, password, and is_admin from request body
+  const { firstname, lastname, email, password, is_admin = false } = req.body; // Destructure firstname, lastname, email, password, and is_admin from request body
 
-    // Input Validation
-    if (!firstname || !lastname || !email || !password) {
-        res.status(400).json({
-            success: false,
-            message: 'All fields are required'
-        });
-    }
+  // Input Validation
+  if (!firstname || !lastname || !email || !password) {
+    res.status(400).json({
+      success: false,
+      message: 'All fields are required',
+    });
+  }
 
-    // Check if user already exists
-    const userExists = await pool.query(
-        'SELECT * FROM users WHERE email = $1',
-        [email]
-    )
+  // Check if user already exists
+  const userExists = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
 
-    if (userExists.rows.length > 0) {
-        res.status(409).json({
-            success: false,
-            message: 'User already exists'
-        })
-        return;
-    }
+  if (userExists.rows.length > 0) {
+    res.status(409).json({
+      success: false,
+      message: 'User already exists',
+    });
+    return;
+  }
 
-    // Upload avatar
-    const avatarLocalPath = req.file?.path;
+  // Upload avatar
+  const avatarLocalPath = req.file?.path;
 
-    let avatar = null;
-    if (avatarLocalPath) {
-        avatar = await uploadOnCloudinary(avatarLocalPath);
-    }
+  let avatar = null;
+  if (avatarLocalPath) {
+    avatar = await uploadOnCloudinary(avatarLocalPath);
+  }
 
-    // Hash password
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+  // Hash password
+  const saltRounds = 10;
+  const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // Insert user info database
-    const newUser = await pool.query(
-        'INSERT INTO users (firstname, lastname, email, password, avatar, is_admin) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, email, firstname, lastname, avatar',
-        [firstname, lastname, email, hashedPassword, avatar, is_admin]
-    )
+  // Insert user info database
+  const newUser = await pool.query(
+    'INSERT INTO users (firstname, lastname, email, password, avatar, is_admin) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, email, firstname, lastname, avatar',
+    [firstname, lastname, email, hashedPassword, avatar, is_admin],
+  );
 
-    // Generate JWT token
-    const token = generateAuthToken(newUser.rows[0].id, is_admin);
+  // Generate JWT token
+  const token = generateAuthToken(newUser.rows[0].id, is_admin);
 
-    // Send response
-    res.status(201).json({
-        success: true,
-        message: 'User signed up successfully',
-        token,
-        data: newUser.rows[0]
-    })
-})
+  // Send response
+  res.status(201).json({
+    success: true,
+    message: 'User signed up successfully',
+    token,
+    data: newUser.rows[0],
+  });
+});
 
 /**
  * Handles user sign-in by checking if the user exists, verifying the password, and generating a JWT token.
@@ -85,92 +81,89 @@ export const signUp = asyncHandler(async (req, res: Response): Promise<void> => 
  * @returns A Promise that resolves to void.
  */
 export const signIn = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const {email, password} = req.body; // Destructure email and password from request body
+  try {
+    const { email, password } = req.body; // Destructure email and password from request body
 
-        // Input Validation
-        if (!email || !password) {
-            res.status(400).json({
-                success: false,
-                message: 'All fields are required'
-            });
-            return;
-        }
-
-        // Check if user already exists
-        const userExists = await pool.query(
-            'SELECT * FROM users WHERE email = $1',
-            [email]
-        )
-
-        if (!userExists.rows.length) {
-            res.status(400).json({
-                success: false,
-                message: 'User does not exist'
-            })
-            return;
-        }
-
-        // Check if user is verified
-        if (!userExists.rows[0].is_verified) {
-            res.status(400).json({
-                success: false,
-                message: 'User is not verified'
-            })
-            return;
-        }
-
-        // Check is password correct
-        const isPasswordCorrect = await bcrypt.compare(password, userExists.rows[0].password);
-
-        if(!isPasswordCorrect) {
-            res.status(400).json({
-                success: false,
-                message: 'Incorrect password'
-            })
-            return;
-        }
-
-        // Generate JWT token
-        const token = generateAuthToken(userExists.rows[0].id, userExists.rows[0].is_admin);
-
-        // Create safe user
-        const safeUser = {
-            id: userExists.rows[0].id,
-            email: userExists.rows[0].email,
-            firstname: userExists.rows[0].firstname,
-            lastname: userExists.rows[0].lastname,
-            is_admin: userExists.rows[0].is_admin
-        }
-
-        // Send response
-        res.status(200).json({
-            success: true,
-            message: 'User signed in successfully',
-            token,
-            data: safeUser
-        })
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Something went wrong during login process'
-        })
+    // Input Validation
+    if (!email || !password) {
+      res.status(400).json({
+        success: false,
+        message: 'All fields are required',
+      });
+      return;
     }
-}
+
+    // Check if user already exists
+    const userExists = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+
+    if (!userExists.rows.length) {
+      res.status(400).json({
+        success: false,
+        message: 'User does not exist',
+      });
+      return;
+    }
+
+    // Check if user is verified
+    if (!userExists.rows[0].is_verified) {
+      res.status(400).json({
+        success: false,
+        message: 'User is not verified',
+      });
+      return;
+    }
+
+    // Check is password correct
+    const isPasswordCorrect = await bcrypt.compare(password, userExists.rows[0].password);
+
+    if (!isPasswordCorrect) {
+      res.status(400).json({
+        success: false,
+        message: 'Incorrect password',
+      });
+      return;
+    }
+
+    // Generate JWT token
+    const token = generateAuthToken(userExists.rows[0].id, userExists.rows[0].is_admin);
+
+    // Create safe user
+    const safeUser = {
+      id: userExists.rows[0].id,
+      email: userExists.rows[0].email,
+      firstname: userExists.rows[0].firstname,
+      lastname: userExists.rows[0].lastname,
+      is_admin: userExists.rows[0].is_admin,
+    };
+
+    // Send response
+    res.status(200).json({
+      success: true,
+      message: 'User signed in successfully',
+      token,
+      data: safeUser,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Something went wrong during login process',
+    });
+  }
+};
 
 export const signOut = async (req: Request, res: Response): Promise<void> => {
-    try {
-        res.status(200).json({
-            success: true,
-            data: null,
-            message: 'User signed out successfully'
-        })
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Something went wrong during logout process'
-        })
-    }
-}
+  try {
+    res.status(200).json({
+      success: true,
+      data: null,
+      message: 'User signed out successfully',
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Something went wrong during logout process',
+    });
+  }
+};
 
 // TODO: User forgotPassword, User resetPassword, User changePassword, User updateProfile, User deleteProfile, User verifyEmail, User resendVerificationEmail
