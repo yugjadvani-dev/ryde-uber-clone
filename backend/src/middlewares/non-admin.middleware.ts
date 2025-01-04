@@ -15,7 +15,7 @@ const nonAdminMiddleware = (req: Request, res: Response, next: NextFunction): vo
         }
 
         // Verify token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as JwtPayload;
+        const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET as string) as JwtPayload;
         if (!decoded || decoded.is_admin) {
             res.status(403).json({
                 success: false,
