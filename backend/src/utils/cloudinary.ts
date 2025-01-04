@@ -7,10 +7,11 @@ import fs from 'fs';
         cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
         api_key: process.env.CLOUDINARY_API_KEY,
         api_secret: process.env.CLOUDINARY_API_SECRET,
+        secure: true,
     });
 })();
 
-const uploadCloudinary = async (file: string) => {
+const uploadOnCloudinary = async (file: string) => {
     try {
         if (!file) return null;
 
@@ -21,14 +22,29 @@ const uploadCloudinary = async (file: string) => {
         })
 
         // file has been uploaded successfully
-        console.log("file is uploaded on cloudinary ", result.url);
+        console.log("file is uploaded on cloudinary ", result);
 
-        fs.unlinkSync(file);
+        // Check if the file exists before attempting to delete it
+        if (fs.existsSync(file)) {
+            fs.unlinkSync(file);
+        } else {
+            console.warn(`File not found: ${file}`);
+        }
 
         // TODO: result.url should be returned
-        return result;
+        return result.url;
     } catch (error) {
-        fs.unlinkSync(file); // remove the locally saved temporary file as the upload operation got failed
+        console.error("Error uploading to Cloudinary:", error);
+
+        // Check if the file exists before attempting to delete it
+        if (fs.existsSync(file)) {
+            fs.unlinkSync(file);
+        } else {
+            console.warn(`File not found: ${file}`);
+        }
+
         return null;
     }
 }
+
+export default uploadOnCloudinary

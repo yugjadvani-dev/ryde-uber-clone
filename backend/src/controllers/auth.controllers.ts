@@ -1,9 +1,10 @@
-import { Request, Response } from "express";
+import {Request, Response} from "express";
 import pool from "../db/db";
 import bcrypt from 'bcrypt';
 import {generateAuthToken} from "../utils/generateAuthToken";
 import asyncHandler from "../utils/asyncHandler";
-import ApiError from "../utils/ApiError";
+import uploadOnCloudinary from "../utils/cloudinary";
+import fs from 'fs'
 
 /**
  * Handles user sign-up by creating a new user in the database.
@@ -17,17 +18,15 @@ import ApiError from "../utils/ApiError";
  * @param res - The HTTP response object, used to send back the appropriate response.
  * @returns A Promise that resolves to void.
  */
-export const signUp = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const {firstname, lastname, email, password, is_admin} = req.body; // Destructure firstname, lastname, email, password, and is_admin from request body
-    const isAdmin = is_admin ?? false; // Provide a default value of false when is_admin is not present
+export const signUp = asyncHandler(async (req, res: Response): Promise<void> => {
+    const {firstname, lastname, email, password, is_admin = false} = req.body; // Destructure firstname, lastname, email, password, and is_admin from request body
 
     // Input Validation
     if (!firstname || !lastname || !email || !password) {
-        // res.status(400).json({
-        //     success: false,
-        //     message: 'All fields are required'
-        // });
-        throw new ApiError(400, "All fields are required")
+        res.status(400).json({
+            success: false,
+            message: 'All fields are required'
+        });
     }
 
     // Check if user already exists
@@ -37,11 +36,19 @@ export const signUp = asyncHandler(async (req: Request, res: Response): Promise<
     )
 
     if (userExists.rows.length > 0) {
-        res.status(400).json({
+        res.status(409).json({
             success: false,
             message: 'User already exists'
         })
         return;
+    }
+
+    // Upload avatar
+    const avatarLocalPath = req.file?.path;
+
+    let avatar = null;
+    if (avatarLocalPath) {
+        avatar = await uploadOnCloudinary(avatarLocalPath);
     }
 
     // Hash password
@@ -50,12 +57,12 @@ export const signUp = asyncHandler(async (req: Request, res: Response): Promise<
 
     // Insert user info database
     const newUser = await pool.query(
-        'INSERT INTO users (firstname, lastname, email, password, is_admin) VALUES ($1, $2, $3, $4, $5) RETURNING id, email, firstname, lastname',
-        [firstname, lastname, email, hashedPassword, isAdmin]
+        'INSERT INTO users (firstname, lastname, email, password, avatar, is_admin) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, email, firstname, lastname, avatar',
+        [firstname, lastname, email, hashedPassword, avatar, is_admin]
     )
 
     // Generate JWT token
-    const token = generateAuthToken(newUser.rows[0].id, isAdmin);
+    const token = generateAuthToken(newUser.rows[0].id, is_admin);
 
     // Send response
     res.status(201).json({
@@ -65,62 +72,6 @@ export const signUp = asyncHandler(async (req: Request, res: Response): Promise<
         data: newUser.rows[0]
     })
 })
-
-// export const signUp = async (req: Request, res: Response): Promise<void> => {
-//     try {
-        // const {firstname, lastname, email, password, is_admin} = req.body; // Destructure email, password, and name from request body
-        // const isAdmin = is_admin ?? false; // Provide a default value of false when is_admin is not present
-        //
-        // // Input Validation
-        // if (!firstname || !lastname || !email || !password) {
-        //     res.status(400).json({
-        //         success: false,
-        //         message: 'All fields are required'
-        //     });
-        //     return;
-        // }
-        //
-        // // Check if user already exists
-        // const userExists = await pool.query(
-        //     'SELECT * FROM users WHERE email = $1',
-        //     [email]
-        // )
-        //
-        // if (userExists.rows.length > 0) {
-        //     res.status(400).json({
-        //         success: false,
-        //         message: 'User already exists'
-        //     })
-        //     return;
-        // }
-        //
-        // // Hash password
-        // const saltRounds = 10;
-        // const hashedPassword = await bcrypt.hash(password, saltRounds);
-        //
-        // // Insert user info database
-        // const newUser = await pool.query(
-        //     'INSERT INTO users (firstname, lastname, email, password, is_admin) VALUES ($1, $2, $3, $4, $5) RETURNING id, email, firstname, lastname',
-        //     [firstname, lastname, email, hashedPassword, isAdmin]
-        // )
-        //
-        // // Generate JWT token
-        // const token = generateAuthToken(newUser.rows[0].id, isAdmin);
-        //
-        // // Send response
-        // res.status(201).json({
-        //     success: true,
-        //     message: 'User signed up successfully',
-        //     token,
-        //     data: newUser.rows[0]
-        // })
-//     } catch (error) {
-//         res.status(500).json({
-//             success: false,
-//             message: 'Something went wrong during signUp process, please try again!'
-//         })
-//     }
-// }
 
 /**
  * Handles user sign-in by checking if the user exists, verifying the password, and generating a JWT token.
@@ -202,7 +153,7 @@ export const signIn = async (req: Request, res: Response): Promise<void> => {
     } catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Something went wrong during login process, please try again!'
+            message: 'Something went wrong during login process'
         })
     }
 }
@@ -217,9 +168,9 @@ export const signOut = async (req: Request, res: Response): Promise<void> => {
     } catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Something went wrong during logout process, please try again!'
+            message: 'Something went wrong during logout process'
         })
     }
 }
 
-// TODO: User forgotPassword, User resetPassword, User changePassword, User updateProfile, User deleteProfile, User verifyEmail, User resendVerificationEmail, User changeEmail
+// TODO: User forgotPassword, User resetPassword, User changePassword, User updateProfile, User deleteProfile, User verifyEmail, User resendVerificationEmail

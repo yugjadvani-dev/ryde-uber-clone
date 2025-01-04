@@ -12,7 +12,7 @@ export const getAllUsers = async (req: Request, res: Response): Promise<void> =>
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Something went wrong while getting all users, please try again!' });
+        res.status(500).json({ message: 'Something went wrong while getting all users' });
     }
 }
 
@@ -29,7 +29,7 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Something went wrong while getting the user details, please try again!' });
+        res.status(500).json({ message: 'Something went wrong while getting the user details' });
     }
 }
 
@@ -56,6 +56,6 @@ export const updateUserById = async (req: Request, res: Response): Promise<void>
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Something went wrong while updating the user details, please try again!' });
+        res.status(500).json({ message: 'Something went wrong while updating the user details' });
     }
 }
