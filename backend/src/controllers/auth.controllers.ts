@@ -17,7 +17,7 @@ import uploadOnCloudinary from '../utils/cloudinary';
  * @param res - The HTTP response object, used to send back the appropriate response.
  * @returns A Promise that resolves to void.
  */
-export const signUp = asyncHandler(async (req, res: Response): Promise<void> => {
+export const signUp = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const { firstname, lastname, email, password, is_admin = false } = req.body; // Destructure firstname, lastname, email, password, and is_admin from request body
 
   // Input Validation
