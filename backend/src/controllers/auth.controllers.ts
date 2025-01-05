@@ -38,20 +38,14 @@ export const signUp = asyncHandler(async (req: Request, res: Response): Promise<
 
   // Input Validation
   if (!firstname || !lastname || !email || !password) {
-    res.status(400).json({
-      success: false,
-      message: 'All fields are required',
-    });
+    res.status(400).json(new ApiResponse(400, {}, 'All fields are required'));
   }
 
   // Check if user already exists
   const userExists = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
 
   if (userExists.rows.length > 0) {
-    res.status(409).json({
-      success: false,
-      message: 'User already exists',
-    });
+    res.status(409).json(new ApiResponse(409, {}, 'User already exists'));
     return;
   }
 
@@ -74,11 +68,7 @@ export const signUp = asyncHandler(async (req: Request, res: Response): Promise<
   );
 
   // Send response
-  res.status(201).json({
-    success: true,
-    message: 'User signed up successfully',
-    data: newUser.rows[0],
-  });
+  res.status(201).json(new ApiResponse(201, newUser.rows[0], 'User signed up successfully'));
 });
 
 /**
@@ -108,19 +98,13 @@ export const signIn = asyncHandler(async (req: Request, res: Response): Promise<
     const userExists = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
 
     if (!userExists.rows.length) {
-      res.status(400).json({
-        success: false,
-        message: 'User does not exist',
-      });
+      res.status(400).json(new ApiResponse(400, {}, 'User does not exist'));
       return;
     }
 
     // Check if user is verified
     if (!userExists.rows[0].is_verified) {
-      res.status(400).json({
-        success: false,
-        message: 'User is not verified',
-      });
+      res.status(400).json(new ApiResponse(400, {}, 'User is not verified'));
       return;
     }
 
@@ -128,10 +112,7 @@ export const signIn = asyncHandler(async (req: Request, res: Response): Promise<
     const isPasswordCorrect = await bcrypt.compare(password, userExists.rows[0].password);
 
     if (!isPasswordCorrect) {
-      res.status(400).json({
-        success: false,
-        message: 'Incorrect password',
-      });
+      res.status(400).json(new ApiResponse(400, {}, 'Incorrect password'));
       return;
     }
 
@@ -165,11 +146,11 @@ export const signIn = asyncHandler(async (req: Request, res: Response): Promise<
       });
 });
 
-export const signOut = async (req: Request, res: Response): Promise<void> => {
+export const signOut = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const userId = req.body?.id; // Assuming req.user is populated via middleware
 
   if (!userId) {
-     res
+    res
       .status(400)
       .json(new ApiResponse(400, {}, "User ID not provided"));
     return;
@@ -199,6 +180,6 @@ export const signOut = async (req: Request, res: Response): Promise<void> => {
       .status(500)
       .json(new ApiResponse(500, {}, "Internal server error"));
   }
-};
+});
 
 // TODO: User forgotPassword, User resetPassword, User changePassword, User updateProfile, User deleteProfile, User verifyEmail, User resendVerificationEmail
