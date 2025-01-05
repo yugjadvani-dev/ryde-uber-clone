@@ -4,6 +4,22 @@ import bcrypt from 'bcrypt';
 import { generateAuthToken } from '../utils/generateAuthToken';
 import asyncHandler from '../utils/asyncHandler';
 import uploadOnCloudinary from '../utils/cloudinary';
+import { generateRefreshToken } from '../utils/generateRefreshToken';
+import ApiError from '../utils/ApiError';
+import ApiResponse from '../utils/ApiResponse';
+
+const generateAccessAndRefreshTokens = async (userId: number) => {
+  try {
+    const userExists = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
+
+    const generatedAccessToken = generateAuthToken(userId, userExists.rows[0].is_admin);
+    const generatedRefreshToken = generateRefreshToken(userId);
+
+    return { generatedAccessToken, generatedRefreshToken };
+  } catch (error) {
+    throw new ApiError(500, 'Something went wrong while generating refresh and access token');
+  }
+};
 
 /**
  * Handles user sign-up by creating a new user in the database.
@@ -57,14 +73,10 @@ export const signUp = asyncHandler(async (req: Request, res: Response): Promise<
     [firstname, lastname, email, hashedPassword, avatar, is_admin],
   );
 
-  // Generate JWT token
-  const token = generateAuthToken(newUser.rows[0].id, is_admin);
-
   // Send response
   res.status(201).json({
     success: true,
     message: 'User signed up successfully',
-    token,
     data: newUser.rows[0],
   });
 });
@@ -125,7 +137,7 @@ export const signIn = async (req: Request, res: Response): Promise<void> => {
     }
 
     // Generate JWT token
-    const token = generateAuthToken(userExists.rows[0].id, userExists.rows[0].is_admin);
+    const { generatedAccessToken, generatedRefreshToken } = await generateAccessAndRefreshTokens(userExists.rows[0].id);
 
     // Create safe user
     const safeUser = {
@@ -136,12 +148,21 @@ export const signIn = async (req: Request, res: Response): Promise<void> => {
       is_admin: userExists.rows[0].is_admin,
     };
 
+    const options = {
+      httpOnly: true,
+      secure: true,
+    };
+
     // Send response
-    res.status(200).json({
+    res.status(200)
+      .cookie('accessToken', generatedAccessToken, options)
+      .cookie('refreshToken', generatedRefreshToken, options)
+      .json({
       success: true,
       message: 'User signed in successfully',
-      token,
       data: safeUser,
+        accessToken: generatedAccessToken,
+        refreshToken: generatedRefreshToken,
     });
   } catch (error) {
     res.status(500).json({
@@ -151,18 +172,40 @@ export const signIn = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+// TODO: Testing
 export const signOut = async (req: Request, res: Response): Promise<void> => {
+  const userId = req.body?.id; // Assuming req.user is populated via middleware
+
+  if (!userId) {
+     res
+      .status(400)
+      .json(new ApiResponse(400, {}, "User ID not provided"));
+    return;
+  }
+
   try {
-    res.status(200).json({
-      success: true,
-      data: null,
-      message: 'User signed out successfully',
-    });
+    // Update user record to remove the refreshToken
+    await pool.query(
+      "UPDATE users SET refresh_token = NULL WHERE id = $1",
+      [userId]
+    );
+
+    const cookieOptions = {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict" as const, // Use "strict" or "lax" as per your requirement
+    };
+
+    res
+      .status(200)
+      .clearCookie("accessToken", cookieOptions)
+      .clearCookie("refreshToken", cookieOptions)
+      .json(new ApiResponse(200, {}, "User logged out successfully"));
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Something went wrong during logout process',
-    });
+    console.error("Error logging out user:", error);
+    res
+      .status(500)
+      .json(new ApiResponse(500, {}, "Internal server error"));
   }
 };
 
