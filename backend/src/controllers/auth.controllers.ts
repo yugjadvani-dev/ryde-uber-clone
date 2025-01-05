@@ -92,8 +92,7 @@ export const signUp = asyncHandler(async (req: Request, res: Response): Promise<
  * @param res - The HTTP response object, used to send back the appropriate response.
  * @returns A Promise that resolves to void.
  */
-export const signIn = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const signIn = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { email, password } = req.body; // Destructure email and password from request body
 
     // Input Validation
@@ -158,21 +157,14 @@ export const signIn = async (req: Request, res: Response): Promise<void> => {
       .cookie('accessToken', generatedAccessToken, options)
       .cookie('refreshToken', generatedRefreshToken, options)
       .json({
-      success: true,
-      message: 'User signed in successfully',
-      data: safeUser,
+        success: true,
+        message: 'User signed in successfully',
+        data: safeUser,
         accessToken: generatedAccessToken,
         refreshToken: generatedRefreshToken,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Something went wrong during login process',
-    });
-  }
-};
+      });
+});
 
-// TODO: Testing
 export const signOut = async (req: Request, res: Response): Promise<void> => {
   const userId = req.body?.id; // Assuming req.user is populated via middleware
 
