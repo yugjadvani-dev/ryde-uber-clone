@@ -1,10 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
-import asyncHandler from '../utils/asyncHandler';
 import jwt, { JwtPayload } from 'jsonwebtoken';
-import ApiError from '../utils/ApiError';
 import pool from '../db/db';
+import ApiResponse from '../utils/ApiResponse';
 
-const verifyJWT = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+const verifyJWT = async (req: Request, res: Response, next: NextFunction) => {
   if (req.path === '/sign-out') {
     return next();
   }
@@ -13,10 +12,7 @@ const verifyJWT = asyncHandler(async (req: Request, res: Response, next: NextFun
     const token = req.cookies?.accessToken || req.header('Authorization')?.replace('Bearer ', '');
 
     if (!token) {
-      res.status(401).json({
-        success: false,
-        message: 'Unauthorized request',
-      });
+      res.status(401).json(new ApiResponse(401, {}, "Unauthorized request"));
       return;
     }
 
@@ -28,16 +24,13 @@ const verifyJWT = asyncHandler(async (req: Request, res: Response, next: NextFun
     );
 
     if (rows.length === 0) {
-      throw new ApiError(401, "Invalid Access Token");
+      res.status(401).json(new ApiResponse(401, {}, "Invalid Access Token"));
     }
 
     next();
   } catch (error) {
-    res.status(401).json({
-      success: false,
-      message: 'error?.message || "Invalid access token"',
-    });
+    res.status(401).json(new ApiResponse(401, {}, "Invalid access token"))
   }
-})
+}
 
 export default verifyJWT;

@@ -3,13 +3,13 @@ import pool from '../db/db';
 import ApiResponse from '../utils/ApiResponse';
 
 // Get all the users
-export const getAllUsers = async (req: Request, res: Response): Promise<void> => {
+export const getAllUsers = async (_: Request, res: Response): Promise<void> => {
   try {
     const users = await pool.query('SELECT * FROM users WHERE is_admin = false'); // Query to get all users
     res.status(200).json(new ApiResponse(200, users.rows, 'Users fetched successfully'));
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Something went wrong while getting all users' });
+    res.status(500).json(new ApiResponse(500, {}, 'Something went wrong while getting all users'));
   }
 };
 
@@ -22,7 +22,7 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
     res.status(200).json(new ApiResponse(200, user.rows[0], 'User fetched successfully'));
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Something went wrong while getting the user details' });
+    res.status(500).json(new ApiResponse(500, {}, 'Something went wrong while getting the user details'));
   }
 };
 

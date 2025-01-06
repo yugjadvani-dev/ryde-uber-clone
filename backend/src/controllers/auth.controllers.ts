@@ -33,43 +33,47 @@ const generateAccessAndRefreshTokens = async (userId: number) => {
  * @param res - The HTTP response object, used to send back the appropriate response.
  * @returns A Promise that resolves to void.
  */
-export const signUp = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { firstname, lastname, email, password, is_admin = false } = req.body; // Destructure firstname, lastname, email, password, and is_admin from request body
+export const signUp = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { firstname, lastname, email, password, is_admin = false } = req.body; // Destructure firstname, lastname, email, password, and is_admin from request body
 
-  // Input Validation
-  if (!firstname || !lastname || !email || !password) {
-    res.status(400).json(new ApiResponse(400, {}, 'All fields are required'));
+    // Input Validation
+    if (!firstname || !lastname || !email || !password) {
+      res.status(400).json(new ApiResponse(400, {}, 'All fields are required'));
+    }
+
+    // Check if user already exists
+    const userExists = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+
+    if (userExists.rows.length > 0) {
+      res.status(409).json(new ApiResponse(409, {}, 'User already exists'));
+      return;
+    }
+
+    // Upload avatar
+    const avatarLocalPath = req.file?.path;
+
+    let avatar = null;
+    if (avatarLocalPath) {
+      avatar = await uploadOnCloudinary(avatarLocalPath);
+    }
+
+    // Hash password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Insert user info database
+    const newUser = await pool.query(
+      'INSERT INTO users (firstname, lastname, email, password, avatar, is_admin) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, email, firstname, lastname, avatar',
+      [firstname, lastname, email, hashedPassword, avatar, is_admin],
+    );
+
+    // Send response
+    res.status(201).json(new ApiResponse(201, newUser.rows[0], 'User signed up successfully'));
+  } catch (error) {
+    res.status(500).json(new ApiResponse(500, {}, 'Something went wrong while signing up'));
   }
-
-  // Check if user already exists
-  const userExists = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-
-  if (userExists.rows.length > 0) {
-    res.status(409).json(new ApiResponse(409, {}, 'User already exists'));
-    return;
-  }
-
-  // Upload avatar
-  const avatarLocalPath = req.file?.path;
-
-  let avatar = null;
-  if (avatarLocalPath) {
-    avatar = await uploadOnCloudinary(avatarLocalPath);
-  }
-
-  // Hash password
-  const saltRounds = 10;
-  const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-  // Insert user info database
-  const newUser = await pool.query(
-    'INSERT INTO users (firstname, lastname, email, password, avatar, is_admin) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, email, firstname, lastname, avatar',
-    [firstname, lastname, email, hashedPassword, avatar, is_admin],
-  );
-
-  // Send response
-  res.status(201).json(new ApiResponse(201, newUser.rows[0], 'User signed up successfully'));
-});
+};
 
 /**
  * Handles user sign-in by checking if the user exists, verifying the password, and generating a JWT token.
@@ -87,10 +91,7 @@ export const signIn = asyncHandler(async (req: Request, res: Response): Promise<
 
     // Input Validation
     if (!email || !password) {
-      res.status(400).json({
-        success: false,
-        message: 'All fields are required',
-      });
+      res.status(400).json(new ApiResponse(400, {}, 'All fields are required'));
       return;
     }
 
@@ -104,7 +105,7 @@ export const signIn = asyncHandler(async (req: Request, res: Response): Promise<
 
     // Check if user is verified
     if (!userExists.rows[0].is_verified) {
-      res.status(400).json(new ApiResponse(400, {}, 'User is not verified'));
+      res.status(400).json(new ApiResponse(400,   {}, 'User is not verified'));
       return;
     }
 
@@ -146,7 +147,7 @@ export const signIn = asyncHandler(async (req: Request, res: Response): Promise<
       });
 });
 
-export const signOut = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+export const signOut = async (req: Request, res: Response): Promise<void> => {
   const userId = req.body?.id; // Assuming req.user is populated via middleware
 
   if (!userId) {
@@ -175,11 +176,12 @@ export const signOut = asyncHandler(async (req: Request, res: Response): Promise
       .clearCookie("refreshToken", cookieOptions)
       .json(new ApiResponse(200, {}, "User logged out successfully"));
   } catch (error) {
-    console.error("Error logging out user:", error);
     res
       .status(500)
       .json(new ApiResponse(500, {}, "Internal server error"));
   }
-});
+};
 
-// TODO: User forgotPassword, User resetPassword, User changePassword, User updateProfile, User deleteProfile, User verifyEmail, User resendVerificationEmail
+// export const
+
+// TODO: Change User Email, User forgotPassword, User resetPassword, User changePassword, User updateProfile, User deleteProfile, User verifyEmail, User resendVerificationEmail
