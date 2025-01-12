@@ -1,13 +1,20 @@
-interface ApiError {
+interface ApiErrorType {
   statusCode: number;
-  data: any;
+  data: unknown;
   message: string;
   success: boolean;
-  errors: any[];
+  errors: unknown[];
   stack: string;
 }
 
-class ApiError extends Error implements ApiError {
+class ApiError extends Error implements ApiErrorType {
+  public statusCode: number;
+  public data: unknown;
+  public message: string;
+  public success: boolean;
+  public errors: unknown[];
+  public stack: string;
+
   constructor(statusCode: number, message = 'Something went wrong', errors = [], stack = '') {
     super(message);
     this.statusCode = statusCode;
@@ -17,8 +24,9 @@ class ApiError extends Error implements ApiError {
     this.errors = errors;
 
     if (stack) {
-      this.stack = stack;
+      this.stack = stack ?? '';
     } else {
+      this.stack = '';
       Error.captureStackTrace(this, this.constructor);
     }
   }

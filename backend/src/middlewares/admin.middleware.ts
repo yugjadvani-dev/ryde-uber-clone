@@ -35,7 +35,7 @@ const adminMiddleware = (req: Request, res: Response, next: NextFunction): void 
     }
 
     next();
-  } catch (error) {
+  } catch {
     res.status(401).json(new ApiResponse(401, {}, 'Token is not valid'));
   }
 };
