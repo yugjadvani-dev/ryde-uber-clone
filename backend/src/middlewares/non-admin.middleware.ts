@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import ApiResponse from '../utils/ApiResponse';
 
+// Middleware to verify if the request has a valid non-admin authentication token
 const nonAdminMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   try {
     // Get token from header

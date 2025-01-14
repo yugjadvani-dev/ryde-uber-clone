@@ -1,6 +1,7 @@
 import { v2 as cloudinary } from 'cloudinary';
 import fs from 'fs';
 
+// Initialize Cloudinary
 (async function () {
   // Configure Cloudinary
   cloudinary.config({
@@ -11,6 +12,7 @@ import fs from 'fs';
   });
 })();
 
+// Upload image to Cloudinary and delete local file after upload is successful or fails
 const uploadOnCloudinary = async (file: string) => {
   try {
     if (!file) return null;

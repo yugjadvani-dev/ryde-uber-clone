@@ -1,3 +1,4 @@
+// Interface for ApiError class
 interface ApiErrorType {
   statusCode: number;
   data: unknown;
@@ -7,6 +8,7 @@ interface ApiErrorType {
   stack: string;
 }
 
+// Custom error class
 class ApiError extends Error implements ApiErrorType {
   public statusCode: number;
   public data: unknown;

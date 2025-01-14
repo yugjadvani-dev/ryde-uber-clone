@@ -9,6 +9,7 @@ import ApiError from '../utils/ApiError';
 import ApiResponse from '../utils/ApiResponse';
 import jwt from 'jsonwebtoken';
 
+// Generate access and refresh tokens
 const generateAccessAndRefreshTokens = async (userId: number) => {
   try {
     const userExists = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
@@ -22,18 +23,7 @@ const generateAccessAndRefreshTokens = async (userId: number) => {
   }
 };
 
-/**
- * Handles user sign-up by creating a new user in the database.
- *
- * This function expects `firstname`, `lastname`, `email`, `password`, and `role`
- * to be present in the request body. It performs input validation, checks if the user already exists,
- * hashes the password, inserts the new user into the database, generates a JWT token, and returns
- * a success response with the user's details and token.
- *
- * @param req - The HTTP request object, expected to contain user data in its body.
- * @param res - The HTTP response object, used to send back the appropriate response.
- * @returns A Promise that resolves to void.
- */
+// Sign up user controller
 export const signUp = async (req: Request, res: Response): Promise<void> => {
   try {
     const { firstname, lastname, email, password, role } = req.body; // Destructure firstname, lastname, email, password, and role from request body
@@ -76,17 +66,7 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-/**
- * Handles user sign-in by checking if the user exists, verifying the password, and generating a JWT token.
- *
- * This function expects `email` and `password` to be present in the request body. It performs input validation,
- * checks if the user already exists, verifies the password, and generates a JWT token. If the user is not verified,
- * it returns an error response. If the password is incorrect, it also returns an error response.
- *
- * @param req - The HTTP request object, expected to contain user data in its body.
- * @param res - The HTTP response object, used to send back the appropriate response.
- * @returns A Promise that resolves to void.
- */
+// Sign in user controller
 export const signIn = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const { email, password } = req.body; // Destructure email and password from request body
 
@@ -149,6 +129,7 @@ export const signIn = asyncHandler(async (req: Request, res: Response): Promise<
     .json(new ApiResponse(200, user, 'User signed in successfully'));
 });
 
+// Sign out user controller
 export const signOut = async (req: Request, res: Response): Promise<void> => {
   const userId = req.body?.id; // Assuming req.user is populated via middleware
 
@@ -177,6 +158,7 @@ export const signOut = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+// Refresh access token controller
 export const refreshAccessToken = async (req: Request, res: Response): Promise<void> => {
   const incomingRefreshToken: string = req.cookies.refreshToken || req.body.accessToken;
 

@@ -1,5 +1,6 @@
 import multer from 'multer';
 
+// Multer configuration for file upload and storage location
 const storage = multer.diskStorage({
   destination: function (req, file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) {
     cb(null, './public/temp');

@@ -1,3 +1,4 @@
+// Class to handle API responses
 class ApiResponse {
   statusCode: number;
   data: object;

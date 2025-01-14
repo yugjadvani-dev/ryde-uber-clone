@@ -2,20 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import ApiResponse from '../utils/ApiResponse';
 
-/**
- * Middleware to verify if the request has a valid admin authentication token.
- *
- * This middleware checks for the presence of a JWT token in the Authorization
- * header of the request. If the token is not present or invalid, it sends a
- * 401 Unauthorized response. It also verifies if the decoded token contains
- * the necessary admin privileges; if not, it sends a 403 Forbidden response.
- * If the token is valid and the user has admin access, the request is passed
- * to the next middleware or route handler.
- *
- * @param req - The incoming HTTP request object.
- * @param res - The HTTP response object.
- * @param next - The next middleware function in the stack.
- */
+// Middleware to verify if the request has a valid admin authentication token
 const adminMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   try {
     // Get token from header

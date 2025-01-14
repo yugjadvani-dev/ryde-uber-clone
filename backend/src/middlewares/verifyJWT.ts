@@ -3,6 +3,7 @@ import jwt, { JwtPayload } from 'jsonwebtoken';
 import pool from '../db/db';
 import ApiResponse from '../utils/ApiResponse';
 
+// Middleware to verify if the request has a valid authentication token
 const verifyJWT = async (req: Request, res: Response, next: NextFunction) => {
   if (req.path === '/sign-out') {
     return next();

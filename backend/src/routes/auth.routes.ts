@@ -3,8 +3,9 @@ import { refreshAccessToken, signIn, signOut, signUp } from '../controllers/auth
 import upload from '../middlewares/multer.middleware';
 import verifyJWT from '../middlewares/verifyJWT';
 
-const router = express.Router();
+const router = express.Router(); // Initialize the router
 
+// Public routes
 router.post('/sign-up', upload.single('avatar'), signUp); // User signUp
 router.post('/sign-in', signIn); // User signIn
 
