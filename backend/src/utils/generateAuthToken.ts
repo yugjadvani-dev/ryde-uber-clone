@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { Role } from '../types/role.type';
 
 /**
  * Generates a JSON Web Token (JWT) for the given user ID and admin status.
@@ -7,12 +8,12 @@ import jwt from 'jsonwebtoken';
  * and is set to expire after 24 hours.
  *
  * @param userId The ID of the user for whom the token is being generated
- * @param is_admin Whether or not the user has admin privileges
+ * @param role Whether or not the user has admin privileges
  * @returns A JSON Web Token (JWT) containing the user's ID and admin status
  */
-export const generateAuthToken = (userId: number, is_admin: boolean) => {
+export const generateAuthToken = (userId: number, role: Role) => {
   // Generate JWT token logic
-  return jwt.sign({ userId: userId, is_admin: is_admin }, process.env.ACCESS_TOKEN_SECRET as string, {
+  return jwt.sign({ userId, role }, process.env.ACCESS_TOKEN_SECRET as string, {
     expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
   });
 };

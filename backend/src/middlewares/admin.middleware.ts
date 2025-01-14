@@ -29,7 +29,7 @@ const adminMiddleware = (req: Request, res: Response, next: NextFunction): void 
     // Verify token
     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET as string) as JwtPayload;
 
-    if (!decoded || !decoded.userId || !decoded.is_admin) {
+    if (!decoded || !decoded.userId || decoded.role !== 'admin') {
       res.status(403).json(new ApiResponse(401, {}, 'Admin access required'));
       return;
     }

@@ -10,7 +10,7 @@ CREATE TABLE users (
                        password VARCHAR(255) NOT NULL,
                        phone_number VARCHAR(255),
                        is_verified BOOLEAN DEFAULT FALSE,
-                       is_admin BOOLEAN DEFAULT FALSE,
+                       role VARCHAR(20) CHECK (role IN ('user', 'driver', 'admin')) NOT NULL,
                        refresh_token VARCHAR(255),
                        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

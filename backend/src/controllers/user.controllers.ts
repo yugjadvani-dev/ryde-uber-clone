@@ -5,7 +5,7 @@ import ApiResponse from '../utils/ApiResponse';
 // Get all the users
 export const getAllUsers = async (_: Request, res: Response): Promise<void> => {
   try {
-    const users = await pool.query('SELECT * FROM users WHERE is_admin = false'); // Query to get all users
+    const users = await pool.query(`SELECT * FROM users WHERE is_verified = true AND role = 'user'`); // Query to get all users
     res.status(200).json(new ApiResponse(200, users.rows, 'Users fetched successfully'));
   } catch (error) {
     console.error(error);

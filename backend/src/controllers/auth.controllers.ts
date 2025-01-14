@@ -13,7 +13,7 @@ const generateAccessAndRefreshTokens = async (userId: number) => {
   try {
     const userExists = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
 
-    const generatedAccessToken = generateAuthToken(userId, userExists.rows[0].is_admin);
+    const generatedAccessToken = generateAuthToken(userId, userExists.rows[0].role);
     const generatedRefreshToken = generateRefreshToken(userId);
 
     return { generatedAccessToken, generatedRefreshToken };
@@ -25,7 +25,7 @@ const generateAccessAndRefreshTokens = async (userId: number) => {
 /**
  * Handles user sign-up by creating a new user in the database.
  *
- * This function expects `firstname`, `lastname`, `email`, `password`, and optionally `is_admin`
+ * This function expects `firstname`, `lastname`, `email`, `password`, and `role`
  * to be present in the request body. It performs input validation, checks if the user already exists,
  * hashes the password, inserts the new user into the database, generates a JWT token, and returns
  * a success response with the user's details and token.
@@ -36,10 +36,10 @@ const generateAccessAndRefreshTokens = async (userId: number) => {
  */
 export const signUp = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { firstname, lastname, email, password, is_admin = false } = req.body; // Destructure firstname, lastname, email, password, and is_admin from request body
+    const { firstname, lastname, email, password, role } = req.body; // Destructure firstname, lastname, email, password, and role from request body
 
     // Input Validation
-    if (!firstname || !lastname || !email || !password) {
+    if (!firstname || !lastname || !email || !password || !role) {
       res.status(400).json(new ApiResponse(400, {}, 'All fields are required'));
     }
 
@@ -65,8 +65,8 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
 
     // Insert user info database
     const newUser = await pool.query(
-      'INSERT INTO users (firstname, lastname, email, password, avatar, is_admin) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, email, firstname, lastname, avatar',
-      [firstname, lastname, email, hashedPassword, avatar, is_admin],
+      'INSERT INTO users (firstname, lastname, email, password, avatar, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, email, firstname, lastname, avatar',
+      [firstname, lastname, email, hashedPassword, avatar, role],
     );
 
     // Send response
@@ -127,7 +127,7 @@ export const signIn = asyncHandler(async (req: Request, res: Response): Promise<
     email: userExists.rows[0].email,
     firstname: userExists.rows[0].firstname,
     lastname: userExists.rows[0].lastname,
-    is_admin: userExists.rows[0].is_admin,
+    role: userExists.rows[0].role,
   };
 
   const options = {
