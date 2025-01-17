@@ -12,6 +12,8 @@ import fs from 'fs';
   });
 })();
 
+export const cloudinaryFolderName = 'ryde-uber-clone';
+
 // Upload image to Cloudinary and delete local file after upload is successful or fails
 const uploadOnCloudinary = async (file: string) => {
   try {
@@ -19,7 +21,7 @@ const uploadOnCloudinary = async (file: string) => {
 
     // Upload image to Cloudinary
     const result = await cloudinary.uploader.upload(file, {
-      folder: 'ryde-uber-clone',
+      folder: cloudinaryFolderName,
       resource_type: 'image',
     });
 

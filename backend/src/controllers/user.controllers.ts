@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import pool from '../db/db';
 import ApiResponse from '../utils/ApiResponse';
+import { v2 as cloudinary } from 'cloudinary';
+import uploadOnCloudinary, { cloudinaryFolderName } from '../utils/cloudinary';
 
 // Get all the users
 export const getAllUsers = async (_: Request, res: Response): Promise<void> => {
@@ -26,28 +28,90 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
   }
 };
 
-// Update user by id
-export const updateUserById = async (req: Request, res: Response): Promise<void> => {
+// Update profile by id
+export const updateProfileById = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params; // Get the user ID from the request parameters
+    const { firstname, lastname, phone_number } = req.body; // Destructure firstname, lastname, and phone_number from request body
 
-    const { firstname, lastname, email, phone_number } = req.body; // Destructure firstname, lastname, email, and phone_number from request body
+    // Get the existing profile
+    const existProfile = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
 
-    // Input Validation
-    if (!firstname || !lastname || !email || !phone_number) {
-      res.status(400).json(new ApiResponse(400, {}, 'All fields are required'));
+    if (existProfile.rowCount === 0) {
+      res.status(404).json(new ApiResponse(404, {}, 'Profile Not found'));
       return;
     }
 
-    // Update user logic
-    const user = await pool.query(
-      'UPDATE users SET firstname = $1, lastname = $2, email = $3, phone_number = $4 WHERE id = $5',
-      [firstname, lastname, email, phone_number, id],
-    ); // Query to update the user by ID
+    const existingAvatarUrl = existProfile.rows[0].avatar;
+    let existAvatar = null;
 
-    res.status(200).json(new ApiResponse(200, user.rows[0], 'User updated successfully'));
+    if (existingAvatarUrl) {
+      const avatarParts = existingAvatarUrl.split('ryde-uber-clone/');
+      if (avatarParts.length > 1) {
+        existAvatar = avatarParts[1].split('.')[0];
+      }
+    }
+
+    // Upload avatar
+    const avatarLocalPath = req.file?.path;
+    let avatar = existingAvatarUrl;
+
+    if (avatarLocalPath) {
+      if (existAvatar) {
+        await cloudinary.uploader.destroy(`${cloudinaryFolderName}/${existAvatar}`, { invalidate: true }).then(result => console.log(result)); // Delete image from cloudinary
+      }
+      avatar = await uploadOnCloudinary(avatarLocalPath);
+    }
+
+    // Update profile
+    const profile = await pool.query(
+      'UPDATE users SET firstname = $1, lastname = $2, phone_number = $3, avatar = $4 WHERE id = $5 RETURNING *',
+      [firstname, lastname, phone_number, avatar, id],
+    );
+
+    res.status(200).json(new ApiResponse(200, profile.rows[0], 'Profile updated successfully'));
   } catch (error) {
-    console.error(error);
+    console.error('Error updating profile:', error);
     res.status(500).json(new ApiResponse(500, {}, 'Something went wrong while updating the user details'));
+  }
+};
+
+// Delete profile by id
+export const deleteProfileById = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params; // Get the user ID from the request parameters
+
+    // Get the existing profile
+    const existProfile = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
+
+    if (existProfile.rowCount === 0) {
+      res.status(404).json(new ApiResponse(404, {}, 'Profile Not found'));
+      return;
+    }
+
+    const existingAvatarUrl = existProfile.rows[0].avatar;
+    let existAvatar = null;
+
+    if (existingAvatarUrl) {
+      const avatarParts = existingAvatarUrl.split('ryde-uber-clone/');
+      if (avatarParts.length > 1) {
+        existAvatar = avatarParts[1].split('.')[0];
+      }
+    }
+
+    try {
+      if (existAvatar) {
+        await cloudinary.uploader.destroy(`${cloudinaryFolderName}/${existAvatar}`, { invalidate: true }).then(result => console.log(result)); // Delete image from cloudinary
+      }
+
+      await pool.query('DELETE FROM users WHERE id = $1', [id]); // Delete a row by id
+    } catch (error) {
+      console.error(error);
+    }
+
+    // Send response
+    res.status(200).json(new ApiResponse(200, existProfile.rows[0], 'Profile deleted successfully'));
+  } catch {
+    res.status(500).json(new ApiResponse(500, {}, 'Something went wrong while delete profile'));
   }
 };

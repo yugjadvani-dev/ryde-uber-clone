@@ -224,4 +224,4 @@ export const refreshAccessToken = async (req: Request, res: Response): Promise<v
   }
 };
 
-// TODO: Change User Email, User forgotPassword, User resetPassword, User changePassword, User updateProfile, User deleteProfile, User verifyEmail, User resendVerificationEmail
+// TODO: Change User Email, User forgotPassword, User resetPassword, User changePassword, User verifyEmail, User resendVerificationEmail
