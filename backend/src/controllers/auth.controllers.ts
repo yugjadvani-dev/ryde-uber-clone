@@ -12,7 +12,7 @@ import jwt from 'jsonwebtoken';
 // Generate access and refresh tokens
 const generateAccessAndRefreshTokens = async (userId: number) => {
   try {
-    const userExists = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
+    const userExists = await pool.query('SELECT id FROM users WHERE id = $1', [userId]);
 
     const generatedAccessToken = generateAuthToken(userId, userExists.rows[0].role);
     const generatedRefreshToken = generateRefreshToken(userId);

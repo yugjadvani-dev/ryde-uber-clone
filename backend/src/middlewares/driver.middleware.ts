@@ -1,4 +1,4 @@
-import {Request, Response, NextFunction} from 'express'
+import { Request, Response, NextFunction } from 'express';
 import ApiResponse from '../utils/ApiResponse';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 
@@ -8,7 +8,7 @@ const driverMiddleware = (req: Request, res: Response, next: NextFunction): void
     // Get token from header
     const token = req.header('Authorization')?.replace('Bearer ', '');
 
-    if(!token) {
+    if (!token) {
       res.status(401).json(new ApiResponse(401, {}, 'No authentication token provided'));
       return;
     }
@@ -16,15 +16,15 @@ const driverMiddleware = (req: Request, res: Response, next: NextFunction): void
     // Verify token
     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET as string) as JwtPayload;
 
-    if(!decoded || !decoded.userId || decoded.role !== 'driver') {
+    if (!decoded || !decoded.userId || decoded.role !== 'driver') {
       res.status(403).json(new ApiResponse(401, {}, 'Driver access required'));
       return;
     }
 
-    next()
+    next();
   } catch {
-    res.status(401).json(new ApiResponse(401, {}, 'Token is not valid'))
+    res.status(401).json(new ApiResponse(401, {}, 'Token is not valid'));
   }
-}
+};
 
 export default driverMiddleware;
