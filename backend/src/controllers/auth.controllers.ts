@@ -12,7 +12,7 @@ import jwt from 'jsonwebtoken';
 // Generate access and refresh tokens
 const generateAccessAndRefreshTokens = async (userId: number) => {
   try {
-    const userExists = await pool.query('SELECT id FROM users WHERE id = $1', [userId]);
+    const userExists = await pool.query('SELECT id FROM users WHERE id = $1 LIMIT 1', [userId]);
 
     const generatedAccessToken = generateAuthToken(userId, userExists.rows[0].role);
     const generatedRefreshToken = generateRefreshToken(userId);
@@ -34,7 +34,7 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
     }
 
     // Check if user already exists
-    const userExists = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    const userExists = await pool.query('SELECT * FROM users WHERE email = $1 LIMIT 1', [email]);
 
     if (userExists.rows.length > 0) {
       res.status(409).json(new ApiResponse(409, {}, 'User already exists'));
@@ -77,7 +77,7 @@ export const signIn = asyncHandler(async (req: Request, res: Response): Promise<
   }
 
   // Check if user already exists
-  const userExists = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+  const userExists = await pool.query('SELECT * FROM users WHERE email = $1 LIMIT 1', [email]);
 
   if (!userExists.rows.length) {
     res.status(400).json(new ApiResponse(400, {}, 'User does not exist'));

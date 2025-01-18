@@ -22,7 +22,7 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
   try {
     const { id } = req.params; // Get the user ID from the request parameters
     const user = await pool.query(
-      'SELECT id, avatar, firstname, lastname, email, phone_number, is_verified, created_at FROM users WHERE id = $1',
+      'SELECT id, avatar, firstname, lastname, email, phone_number, is_verified, created_at FROM users WHERE id = $1 LIMIT 1',
       [id],
     ); // Query to get the user by ID
 
@@ -41,7 +41,7 @@ export const updateProfileById = async (req: Request, res: Response): Promise<vo
 
     // Get the existing profile
     const existProfile = await pool.query(
-      'SELECT id, avatar, firstname, lastname, email, phone_number, is_verified, created_at FROM users WHERE id = $1',
+      'SELECT id, avatar, firstname, lastname, email, phone_number, is_verified, created_at FROM users WHERE id = $1 LIMIT 1',
       [id],
     );
 
@@ -93,7 +93,7 @@ export const deleteProfileById = async (req: Request, res: Response): Promise<vo
 
     // Get the existing profile
     const existProfile = await pool.query(
-      'SELECT id, avatar, firstname, lastname, email, phone_number, is_verified, created_at FROM users WHERE id = $1',
+      'SELECT id, avatar, firstname, lastname, email, phone_number, is_verified, created_at FROM users WHERE id = $1 LIMIT 1',
       [id],
     );
 

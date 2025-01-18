@@ -19,7 +19,7 @@ const verifyJWT = async (req: Request, res: Response, next: NextFunction) => {
 
     const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET as string) as JwtPayload;
 
-    const { rows } = await pool.query('SELECT id, email FROM users WHERE id = $1', [decodedToken.userId]);
+    const { rows } = await pool.query('SELECT id, email FROM users WHERE id = $1 LIMIT 1', [decodedToken.userId]);
 
     if (rows.length === 0) {
       res.status(401).json(new ApiResponse(401, {}, 'Invalid Access Token'));
