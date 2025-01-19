@@ -1,6 +1,17 @@
+/**
+ * Authentication Controllers Module
+ * Handles all authentication-related operations including user registration,
+ * login, logout, and token management.
+ * 
+ * @module controllers/auth
+ * @requires express
+ * @requires jsonwebtoken
+ * @requires ../db/db
+ * @requires ../utils/authUtils
+ */
+
 import { Request, Response } from 'express';
 import pool from '../db/db';
-import bcrypt from 'bcrypt';
 import { generateAuthToken } from '../utils/generateAuthToken';
 import asyncHandler from '../utils/asyncHandler';
 import uploadOnCloudinary from '../utils/cloudinary';
@@ -9,226 +20,364 @@ import ApiError from '../utils/ApiError';
 import ApiResponse from '../utils/ApiResponse';
 import jwt from 'jsonwebtoken';
 import { sendUserWelcomeEmail } from '../emails/send-user-welcome-email';
+import {
+  validateRequiredFields,
+  checkUserExists,
+  hashPassword,
+  verifyPassword,
+  sendAuthResponse,
+  handleAuthError
+} from '../utils/authUtils';
 
-// Generate access and refresh tokens
+/**
+ * Generate new access and refresh tokens for a user
+ * @private
+ * @param userId - User's ID to generate tokens for
+ * @returns {Promise<{generatedAccessToken: string, generatedRefreshToken: string}>} Object containing access and refresh tokens
+ * @throws {ApiError} If token generation fails or user not found
+ */
 const generateAccessAndRefreshTokens = async (userId: number) => {
   try {
-    const userExists = await pool.query('SELECT id FROM users WHERE id = $1 LIMIT 1', [userId]);
+    const userExists = await pool.query(
+      'SELECT id, role FROM users WHERE id = $1 LIMIT 1',
+      [userId]
+    );
 
     const generatedAccessToken = generateAuthToken(userId, userExists.rows[0].role);
     const generatedRefreshToken = generateRefreshToken(userId);
 
     return { generatedAccessToken, generatedRefreshToken };
-  } catch {
-    throw new ApiError(500, 'Something went wrong while generating refresh and access token');
+  } catch (error) {
+    throw new ApiError(
+      500,
+      'Something went wrong while generating refresh and access token'
+    );
   }
 };
 
-// Sign up user controller
+/**
+ * Register a new user
+ * @route POST /api/auth/sign-up
+ * @param {Request} req - Express request object containing user registration data
+ * @param {Response} res - Express response object
+ * @throws {ApiError} If registration fails
+ * 
+ * @example
+ * // Request body
+ * {
+ *   "firstname": "John",
+ *   "lastname": "Doe",
+ *   "email": "john@example.com",
+ *   "password": "securepassword",
+ *   "role": "user"
+ * }
+ * 
+ * // Response 201
+ * {
+ *   "status": 201,
+ *   "data": {
+ *     "id": 1,
+ *     "email": "john@example.com",
+ *     "firstname": "John",
+ *     "lastname": "Doe",
+ *     "avatar": "https://cloudinary.com/avatar.jpg"
+ *   },
+ *   "message": "User signed up successfully"
+ * }
+ */
 export const signUp = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { firstname, lastname, email, password, role } = req.body; // Destructure firstname, lastname, email, password, and role from request body
+    // Extract user data from request
+    const { firstname, lastname, email, password, role } = req.body;
 
-    // Input Validation
-    if (!firstname || !lastname || !email || !password || !role) {
-      res.status(400).json(new ApiResponse(400, {}, 'All fields are required'));
-    }
-
-    // Check if user already exists
-    const userExists = await pool.query('SELECT * FROM users WHERE email = $1 LIMIT 1', [email]);
-
-    if (userExists.rows.length > 0) {
-      res.status(409).json(new ApiResponse(409, {}, 'User already exists'));
+    // Validate required fields
+    const validation = validateRequiredFields({ firstname, lastname, email, password, role });
+    if (!validation.isValid) {
+      sendAuthResponse(res, 400, {}, validation.error || 'All fields are required');
       return;
     }
 
-    // Upload avatar
-    const avatarLocalPath = req.file?.path;
+    // Check if user already exists
+    await checkUserExists(email, false);
 
+    // Handle avatar upload if provided
+    const avatarLocalPath = req.file?.path;
     let avatar = null;
     if (avatarLocalPath) {
       avatar = await uploadOnCloudinary(avatarLocalPath);
     }
 
-    // Hash password
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-    // Insert user info database
+    // Hash password and create user
+    const hashedPassword = await hashPassword(password);
     const newUser = await pool.query(
       'INSERT INTO users (firstname, lastname, email, password, avatar, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, email, firstname, lastname, avatar',
-      [firstname, lastname, email, hashedPassword, avatar, role],
+      [firstname, lastname, email, hashedPassword, avatar, role]
     );
 
-    // Sending user welcome email
+    // Send welcome email
     await sendUserWelcomeEmail({
       name: `${firstname} ${lastname}`,
       email: email,
-    })
+    });
 
-    // Send response
-    res.status(201).json(new ApiResponse(201, newUser.rows[0], 'User signed up successfully'));
-  } catch {
-    res.status(500).json(new ApiResponse(500, {}, 'Something went wrong while signing up'));
+    sendAuthResponse(res, 201, newUser.rows[0], 'User signed up successfully');
+  } catch (error) {
+    handleAuthError(res, error, 'Something went wrong while signing up');
   }
 };
 
-// Sign in user controller
+/**
+ * Authenticate user and generate tokens
+ * @route POST /api/auth/sign-in
+ * @param {Request} req - Express request object containing login credentials
+ * @param {Response} res - Express response object
+ * 
+ * @example
+ * // Request body
+ * {
+ *   "email": "john@example.com",
+ *   "password": "securepassword"
+ * }
+ * 
+ * // Response 200
+ * {
+ *   "status": 200,
+ *   "data": {
+ *     "user": {
+ *       "id": 1,
+ *       "email": "john@example.com",
+ *       "firstname": "John",
+ *       "lastname": "Doe",
+ *       "role": "user"
+ *     },
+ *     "accessToken": "eyJhbGciOiJ...",
+ *     "refreshToken": "eyJhbGciOiJ..."
+ *   },
+ *   "message": "User signed in successfully"
+ * }
+ */
 export const signIn = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  const { email, password } = req.body; // Destructure email and password from request body
+  try {
+    // Extract and validate credentials
+    const { email, password } = req.body;
+    const validation = validateRequiredFields({ email, password });
+    if (!validation.isValid) {
+      sendAuthResponse(res, 400, {}, validation.error || 'All fields are required');
+      return;
+    }
 
-  // Input Validation
-  if (!email || !password) {
-    res.status(400).json(new ApiResponse(400, {}, 'All fields are required'));
-    return;
+    // Verify user exists and is verified
+    const { userData } = await checkUserExists(email);
+    if (!userData.is_verified) {
+      sendAuthResponse(res, 400, {}, 'User is not verified');
+      return;
+    }
+
+    // Verify password
+    const isPasswordCorrect = await verifyPassword(password, userData.password);
+    if (!isPasswordCorrect) {
+      sendAuthResponse(res, 401, {}, 'Invalid credentials');
+      return;
+    }
+
+    // Generate authentication tokens
+    const { generatedAccessToken, generatedRefreshToken } = await generateAccessAndRefreshTokens(userData.id);
+
+    // Create safe user object (excluding sensitive data)
+    const safeUser = {
+      id: userData.id,
+      email: userData.email,
+      firstname: userData.firstname,
+      lastname: userData.lastname,
+      role: userData.role,
+    };
+
+    // Set cookie options
+    const options = {
+      httpOnly: true,
+      secure: true,
+    };
+
+    // Prepare response data
+    const user = {
+      user: safeUser,
+      accessToken: generatedAccessToken,
+      refreshToken: generatedRefreshToken,
+    };
+
+    // Send successful response with cookies
+    res
+      .status(200)
+      .cookie('accessToken', generatedAccessToken, options)
+      .cookie('refreshToken', generatedRefreshToken, options)
+      .json(new ApiResponse(200, user, 'User signed in successfully'));
+  } catch (error) {
+    handleAuthError(res, error, 'Something went wrong while signing in');
   }
-
-  // Check if user already exists
-  const userExists = await pool.query('SELECT * FROM users WHERE email = $1 LIMIT 1', [email]);
-
-  if (!userExists.rows.length) {
-    res.status(400).json(new ApiResponse(400, {}, 'User does not exist'));
-    return;
-  }
-
-  // Check if user is verified
-  if (!userExists.rows[0].is_verified) {
-    res.status(400).json(new ApiResponse(400, {}, 'User is not verified'));
-    return;
-  }
-
-  // Check is password correct
-  const isPasswordCorrect = await bcrypt.compare(password, userExists.rows[0].password);
-
-  if (!isPasswordCorrect) {
-    res.status(400).json(new ApiResponse(400, {}, 'Incorrect password'));
-    return;
-  }
-
-  // Generate JWT token
-  const { generatedAccessToken, generatedRefreshToken } = await generateAccessAndRefreshTokens(userExists.rows[0].id);
-
-  // Create safe user
-  const safeUser = {
-    id: userExists.rows[0].id,
-    email: userExists.rows[0].email,
-    firstname: userExists.rows[0].firstname,
-    lastname: userExists.rows[0].lastname,
-    role: userExists.rows[0].role,
-  };
-
-  const options = {
-    httpOnly: true,
-    secure: true,
-  };
-
-  const user = {
-    user: safeUser,
-    accessToken: generatedAccessToken,
-    refreshToken: generatedRefreshToken,
-  };
-
-  // Send response
-  res
-    .status(200)
-    .cookie('accessToken', generatedAccessToken, options)
-    .cookie('refreshToken', generatedRefreshToken, options)
-    .json(new ApiResponse(200, user, 'User signed in successfully'));
 });
 
-// Sign out user controller
+/**
+ * Sign out user and clear authentication tokens
+ * @route POST /api/auth/sign-out
+ * @param {Request} req - Express request object containing user ID
+ * @param {Response} res - Express response object
+ * 
+ * @example
+ * // Request body
+ * {
+ *   "id": "123"
+ * }
+ * 
+ * // Response 200
+ * {
+ *   "status": 200,
+ *   "data": {},
+ *   "message": "User logged out successfully"
+ * }
+ */
 export const signOut = async (req: Request, res: Response): Promise<void> => {
-  const userId = req.body?.id; // Assuming req.user is populated via middleware
+  const userId = req.body?.id;
 
   if (!userId) {
-    res.status(400).json(new ApiResponse(400, {}, 'User ID not provided'));
+    sendAuthResponse(res, 400, {}, 'User ID not provided');
     return;
   }
 
   try {
-    // Update user record to remove the refreshToken
+    // Clear refresh token in database
     await pool.query('UPDATE users SET refresh_token = NULL WHERE id = $1', [userId]);
 
+    // Configure cookie options for clearing
     const cookieOptions = {
       httpOnly: true,
       secure: true,
-      sameSite: 'strict' as const, // Use "strict" or "lax" as per your requirement
+      sameSite: 'strict' as const,
     };
 
+    // Clear authentication cookies and send response
     res
       .status(200)
       .clearCookie('accessToken', cookieOptions)
       .clearCookie('refreshToken', cookieOptions)
       .json(new ApiResponse(200, {}, 'User logged out successfully'));
-  } catch {
-    res.status(500).json(new ApiResponse(500, {}, 'Internal server error'));
+  } catch (error) {
+    handleAuthError(res, error, 'Internal server error');
   }
 };
 
-// Refresh access token controller
+/**
+ * Refresh access token using refresh token
+ * @route POST /api/auth/refresh-token
+ * @param {Request} req - Express request object containing refresh token
+ * @param {Response} res - Express response object
+ * 
+ * @example
+ * // Request cookies should contain refreshToken
+ * 
+ * // Response 200
+ * {
+ *   "status": 200,
+ *   "data": {
+ *     "accessToken": "eyJhbGciOiJ...",
+ *     "refreshToken": "eyJhbGciOiJ..."
+ *   },
+ *   "message": "Access token refreshed"
+ * }
+ */
 export const refreshAccessToken = async (req: Request, res: Response): Promise<void> => {
-  const incomingRefreshToken: string = req.cookies.refreshToken || req.body.accessToken;
-
   try {
+    const incomingRefreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
+
     if (!incomingRefreshToken) {
-      res.status(401).json(new ApiResponse(401, {}, 'unauthorized request'));
+      throw new ApiError(401, 'Unauthorized request');
     }
 
-    // Decode and verify the refresh token
-    const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET as string) as jwt.JwtPayload;
+    const decodedToken = jwt.verify(
+      incomingRefreshToken,
+      process.env.REFRESH_TOKEN_SECRET as string
+    ) as jwt.JwtPayload;
 
-    const userId = decodedToken?._id;
+    const user = await pool.query('SELECT * FROM users WHERE id = $1', [decodedToken.userId]);
 
-    if (!userId) {
-      res.status(401).json(new ApiResponse(401, {}, 'Invalid refresh token'));
+    if (!user.rows[0]) {
+      throw new ApiError(401, 'Invalid refresh token');
     }
 
-    // Fetch the user from PostgreSQL using a raw query
-    const query = 'SELECT id, refresh_token FROM users WHERE id = $1 LIMIT 1';
-    const result = await pool.query(query, [userId]);
+    const { generatedAccessToken, generatedRefreshToken } = await generateAccessAndRefreshTokens(user.rows[0].id);
 
-    if (result.rowCount === 0) {
-      res.status(401).json(new ApiResponse(401, {}, 'Invalid refresh token'));
-    }
-
-    const user = result.rows[0];
-
-    // Validate the refresh token matches the one stored in the database
-    if (incomingRefreshToken !== user.refresh_token) {
-      res.status(401).json(new ApiResponse(401, {}, 'Refresh token is expired or used'));
-    }
-
-    // Generate new tokens
-    const { generatedAccessToken, generatedRefreshToken } = await generateAccessAndRefreshTokens(user.id);
-
-    // Update the user's refresh token in the database
-    const updateQuery = 'UPDATE users SET refresh_token = $1 WHERE id = $2';
-    await pool.query(updateQuery, [generatedRefreshToken, user.id]);
-
-    // Cookie options
-    const cookieOptions = {
+    const options = {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict' as const,
+      secure: true,
     };
 
-    // Send response with new tokens
     res
       .status(200)
-      .cookie('accessToken', generatedAccessToken, cookieOptions)
-      .cookie('refreshToken', generatedRefreshToken, cookieOptions)
+      .cookie('accessToken', generatedAccessToken, options)
+      .cookie('refreshToken', generatedRefreshToken, options)
       .json(
         new ApiResponse(
           200,
           { accessToken: generatedAccessToken, refreshToken: generatedRefreshToken },
-          'Access token refreshed',
-        ),
+          'Access token refreshed'
+        )
       );
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      res.status(401).json(new ApiResponse(401, {}, error?.message || 'Invalid refresh token'));
-    }
+  } catch (error) {
+    handleAuthError(res, error, 'Invalid refresh token');
   }
 };
 
-// TODO: Change User Email, User forgotPassword, User resetPassword, User changePassword, User verifyEmail, User resendVerificationEmail
+/**
+ * Initiate password reset process
+ * @route POST /api/auth/forgot-password
+ * @param {Request} req - Express request object containing user email
+ * @param {Response} res - Express response object
+ * 
+ * @example
+ * // Request body
+ * {
+ *   "email": "john@example.com"
+ * }
+ * 
+ * // Response 200
+ * {
+ *   "status": 200,
+ *   "data": {},
+ *   "message": "Password reset instructions sent to email"
+ * }
+ */
+export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      sendAuthResponse(res, 400, {}, 'Email is required');
+      return;
+    }
+
+    const { userData } = await checkUserExists(email);
+
+    // TODO: Generate password reset token and send email
+    // This is a placeholder for the actual implementation
+    res.status(200).json(
+      new ApiResponse(
+        200,
+        {},
+        'If a user with that email exists, password reset instructions will be sent.'
+      )
+    );
+  } catch (error) {
+    handleAuthError(res, error, 'Error processing password reset request');
+  }
+};
+
+/**
+ * TODO: Implement these additional authentication features
+ * Each feature should follow the same pattern of comprehensive documentation
+ * and error handling as the existing endpoints.
+ * 
+ * @todo Implement changeUserEmail - Allow users to update their email address
+ * @todo Implement resetPassword - Allow users to reset their password using a token
+ * @todo Implement changePassword - Allow users to change their password while logged in
+ * @todo Implement verifyEmail - Verify user's email address
+ * @todo Implement resendVerificationEmail - Resend verification email
+ */

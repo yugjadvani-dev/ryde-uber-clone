@@ -1,6 +1,16 @@
+/**
+ * Nodemailer Configuration
+ * This module configures and exports a nodemailer transport for sending emails.
+ * Uses Gmail SMTP for sending emails with environment-based authentication.
+ */
+
 import nodemailer from 'nodemailer';
 
-// Configuration options for nodemailer
+/**
+ * SMTP Configuration for Gmail
+ * @requires EMAIL_USER - Gmail email address from environment variables
+ * @requires EMAIL_PASSWORD - Gmail app-specific password from environment variables
+ */
 const configOptions = {
   host: 'smtp.gmail.com',
   port: 587,
@@ -12,7 +22,7 @@ const configOptions = {
   },
 }
 
-// Creating nodemailer createTransport
+// Create reusable transporter object using SMTP configuration
 const transporter = nodemailer.createTransport(configOptions);
 
-export default transporter
+export default transporter;

@@ -1,132 +1,199 @@
+/**
+ * User Management Controllers
+ * This module handles all user-related operations including profile management,
+ * user listing, and profile updates/deletions.
+ */
+
 import { Request, Response } from 'express';
 import pool from '../db/db';
-import ApiResponse from '../utils/ApiResponse';
+import { validateRequiredFields, sendAuthResponse, handleAuthError } from '../utils/authUtils';
 import { v2 as cloudinary } from 'cloudinary';
 import uploadOnCloudinary, { cloudinaryFolderName } from '../utils/cloudinary';
 
-// Get all the users
+/**
+ * Extracts and processes avatar identifier from Cloudinary URL
+ * @param existingAvatarUrl - Full Cloudinary URL of the avatar
+ * @returns Promise resolving to avatar identifier or null if URL is invalid
+ */
+const handleAvatarOperations = async (existingAvatarUrl: string | null): Promise<string | null> => {
+  if (!existingAvatarUrl) return null;
+  const avatarParts = existingAvatarUrl.split('ryde-uber-clone/');
+  if (avatarParts.length > 1) {
+    return avatarParts[1].split('.')[0];
+  }
+  return null;
+};
+
+/**
+ * Retrieves all verified users with role 'user'
+ * @route GET /api/users
+ * @access Private/Admin
+ */
 export const getAllUsers = async (_: Request, res: Response): Promise<void> => {
   try {
     const users = await pool.query(
-      `SELECT id, avatar, firstname, lastname, email, phone_number, is_verified, created_at FROM users WHERE is_verified = true AND role = 'user'`,
-    ); // Query to get all users
-    res.status(200).json(new ApiResponse(200, users.rows, 'Users fetched successfully'));
+      `SELECT id, avatar, firstname, lastname, email, phone_number, is_verified, created_at 
+       FROM users 
+       WHERE is_verified = true AND role = 'user'`,
+    );
+    sendAuthResponse(res, 200, users.rows, 'Users fetched successfully');
   } catch (error) {
-    console.error(error);
-    res.status(500).json(new ApiResponse(500, {}, 'Something went wrong while getting all users'));
+    handleAuthError(res, error, 'Something went wrong while getting all users');
   }
 };
 
-// Get single user by id
+/**
+ * Retrieves a single user by their ID
+ * @route GET /api/users/:id
+ * @param id - User ID
+ * @access Private
+ */
 export const getUserById = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params; // Get the user ID from the request parameters
-    const user = await pool.query(
-      'SELECT id, avatar, firstname, lastname, email, phone_number, is_verified, created_at FROM users WHERE id = $1 LIMIT 1',
-      [id],
-    ); // Query to get the user by ID
+    const { id } = req.params;
+    
+    const validation = validateRequiredFields({ id });
+    if (!validation.isValid) {
+      sendAuthResponse(res, 400, {}, validation.error || 'User ID is required');
+      return;
+    }
 
-    res.status(200).json(new ApiResponse(200, user.rows[0], 'User fetched successfully'));
+    const user = await pool.query(
+      `SELECT id, avatar, firstname, lastname, email, phone_number, is_verified, created_at 
+       FROM users 
+       WHERE id = $1 LIMIT 1`,
+      [id],
+    );
+
+    if (user.rowCount === 0) {
+      sendAuthResponse(res, 404, {}, 'User not found');
+      return;
+    }
+
+    sendAuthResponse(res, 200, user.rows[0], 'User fetched successfully');
   } catch (error) {
-    console.error(error);
-    res.status(500).json(new ApiResponse(500, {}, 'Something went wrong while getting the user details'));
+    handleAuthError(res, error, 'Something went wrong while getting the user details');
   }
 };
 
-// Update profile by id
+/**
+ * Updates user profile information
+ * @route PUT /api/users/:id
+ * @param id - User ID
+ * @body firstname - User's first name
+ * @body lastname - User's last name
+ * @body phone_number - User's phone number (optional)
+ * @body avatar - User's profile picture (optional, file upload)
+ * @access Private
+ */
 export const updateProfileById = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params; // Get the user ID from the request parameters
-    const { firstname, lastname, phone_number } = req.body; // Destructure firstname, lastname, and phone_number from request body
+    const { id } = req.params;
+    const { firstname, lastname, phone_number } = req.body;
 
-    // Get the existing profile
+    // Validate required fields
+    const validation = validateRequiredFields({ id, firstname, lastname });
+    if (!validation.isValid) {
+      sendAuthResponse(res, 400, {}, validation.error || 'Required fields are missing');
+      return;
+    }
+
+    // Check if profile exists
     const existProfile = await pool.query(
-      'SELECT id, avatar, firstname, lastname, email, phone_number, is_verified, created_at FROM users WHERE id = $1 LIMIT 1',
+      `SELECT id, avatar, firstname, lastname, email, phone_number, is_verified, created_at 
+       FROM users 
+       WHERE id = $1 LIMIT 1`,
       [id],
     );
 
     if (existProfile.rowCount === 0) {
-      res.status(404).json(new ApiResponse(404, {}, 'Profile Not found'));
+      sendAuthResponse(res, 404, {}, 'Profile not found');
       return;
     }
 
+    // Handle avatar update if new file is uploaded
     const existingAvatarUrl = existProfile.rows[0].avatar;
-    let existAvatar = null;
+    const existAvatar = await handleAvatarOperations(existingAvatarUrl);
 
-    if (existingAvatarUrl) {
-      const avatarParts = existingAvatarUrl.split('ryde-uber-clone/');
-      if (avatarParts.length > 1) {
-        existAvatar = avatarParts[1].split('.')[0];
-      }
-    }
-
-    // Upload avatar
     const avatarLocalPath = req.file?.path;
     let avatar = existingAvatarUrl;
 
     if (avatarLocalPath) {
+      // Delete existing avatar from Cloudinary if it exists
       if (existAvatar) {
         await cloudinary.uploader
           .destroy(`${cloudinaryFolderName}/${existAvatar}`, { invalidate: true })
-          .then((result) => console.log(result)); // Delete image from cloudinary
+          .then((result) => console.log(result));
       }
+      // Upload new avatar
       avatar = await uploadOnCloudinary(avatarLocalPath);
     }
 
-    // Update profile
+    // Update user profile in database
     const profile = await pool.query(
-      'UPDATE users SET firstname = $1, lastname = $2, phone_number = $3, avatar = $4 WHERE id = $5 RETURNING id, avatar, firstname, lastname, email, phone_number, is_verified, created_at',
+      `UPDATE users 
+       SET firstname = $1, lastname = $2, phone_number = $3, avatar = $4 
+       WHERE id = $5 
+       RETURNING id, avatar, firstname, lastname, email, phone_number, is_verified, created_at`,
       [firstname, lastname, phone_number, avatar, id],
     );
 
-    res.status(200).json(new ApiResponse(200, profile.rows[0], 'Profile updated successfully'));
+    sendAuthResponse(res, 200, profile.rows[0], 'Profile updated successfully');
   } catch (error) {
-    console.error('Error updating profile:', error);
-    res.status(500).json(new ApiResponse(500, {}, 'Something went wrong while updating the user details'));
+    handleAuthError(res, error, 'Something went wrong while updating the user details');
   }
 };
 
-// Delete profile by id
+/**
+ * Deletes a user profile and associated resources
+ * @route DELETE /api/users/:id
+ * @param id - User ID
+ * @access Private/Admin
+ */
 export const deleteProfileById = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params; // Get the user ID from the request parameters
+    const { id } = req.params;
 
-    // Get the existing profile
+    const validation = validateRequiredFields({ id });
+    if (!validation.isValid) {
+      sendAuthResponse(res, 400, {}, validation.error || 'User ID is required');
+      return;
+    }
+
+    // Check if profile exists
     const existProfile = await pool.query(
-      'SELECT id, avatar, firstname, lastname, email, phone_number, is_verified, created_at FROM users WHERE id = $1 LIMIT 1',
+      `SELECT id, avatar, firstname, lastname, email, phone_number, is_verified, created_at 
+       FROM users 
+       WHERE id = $1 LIMIT 1`,
       [id],
     );
 
     if (existProfile.rowCount === 0) {
-      res.status(404).json(new ApiResponse(404, {}, 'Profile Not found'));
+      sendAuthResponse(res, 404, {}, 'Profile not found');
       return;
     }
 
+    // Handle avatar deletion
     const existingAvatarUrl = existProfile.rows[0].avatar;
-    let existAvatar = null;
-
-    if (existingAvatarUrl) {
-      const avatarParts = existingAvatarUrl.split('ryde-uber-clone/');
-      if (avatarParts.length > 1) {
-        existAvatar = avatarParts[1].split('.')[0];
-      }
-    }
+    const existAvatar = await handleAvatarOperations(existingAvatarUrl);
 
     try {
+      // Delete avatar from Cloudinary if it exists
       if (existAvatar) {
         await cloudinary.uploader
           .destroy(`${cloudinaryFolderName}/${existAvatar}`, { invalidate: true })
-          .then((result) => console.log(result)); // Delete image from cloudinary
+          .then((result) => console.log(result));
       }
 
-      await pool.query('DELETE FROM users WHERE id = $1', [id]); // Delete a row by id
+      // Delete user from database
+      await pool.query('DELETE FROM users WHERE id = $1', [id]);
     } catch (error) {
-      console.error(error);
+      handleAuthError(res, error, 'Error deleting user resources');
+      return;
     }
 
-    // Send response
-    res.status(200).json(new ApiResponse(200, existProfile.rows[0], 'Profile deleted successfully'));
-  } catch {
-    res.status(500).json(new ApiResponse(500, {}, 'Something went wrong while delete profile'));
+    sendAuthResponse(res, 200, existProfile.rows[0], 'Profile deleted successfully');
+  } catch (error) {
+    handleAuthError(res, error, 'Something went wrong while deleting profile');
   }
 };
