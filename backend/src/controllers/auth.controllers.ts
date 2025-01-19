@@ -8,6 +8,7 @@ import { generateRefreshToken } from '../utils/generateRefreshToken';
 import ApiError from '../utils/ApiError';
 import ApiResponse from '../utils/ApiResponse';
 import jwt from 'jsonwebtoken';
+import { sendUserWelcomeEmail } from '../emails/send-user-welcome-email';
 
 // Generate access and refresh tokens
 const generateAccessAndRefreshTokens = async (userId: number) => {
@@ -58,6 +59,12 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
       'INSERT INTO users (firstname, lastname, email, password, avatar, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, email, firstname, lastname, avatar',
       [firstname, lastname, email, hashedPassword, avatar, role],
     );
+
+    // Sending user welcome email
+    await sendUserWelcomeEmail({
+      name: `${firstname} ${lastname}`,
+      email: email,
+    })
 
     // Send response
     res.status(201).json(new ApiResponse(201, newUser.rows[0], 'User signed up successfully'));
