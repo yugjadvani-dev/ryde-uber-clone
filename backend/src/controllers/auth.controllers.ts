@@ -47,29 +47,6 @@ const generateAccessAndRefreshTokens = async (userId: number): Promise<{ generat
  * @param {Request} req - Express request object containing user registration data
  * @param {Response} res - Express response object
  * @throws {ApiError} If registration fails
- *
- * @example
- * // Request body
- * {
- *   "firstname": "John",
- *   "lastname": "Doe",
- *   "email": "john@example.com",
- *   "password": "securepassword",
- *   "role": "user"
- * }
- *
- * // Response 201
- * {
- *   "status": 201,
- *   "data": {
- *     "id": 1,
- *     "email": "john@example.com",
- *     "firstname": "John",
- *     "lastname": "Doe",
- *     "avatar": "https://cloudinary.com/avatar.jpg"
- *   },
- *   "message": "User signed up successfully"
- * }
  */
 export const signUp = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -117,30 +94,6 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
  * @route POST /api/auth/sign-in
  * @param {Request} req - Express request object containing login credentials
  * @param {Response} res - Express response object
- *
- * @example
- * // Request body
- * {
- *   "email": "john@example.com",
- *   "password": "securepassword"
- * }
- *
- * // Response 200
- * {
- *   "status": 200,
- *   "data": {
- *     "user": {
- *       "id": 1,
- *       "email": "john@example.com",
- *       "firstname": "John",
- *       "lastname": "Doe",
- *       "role": "user"
- *     },
- *     "accessToken": "eyJhbGciOiJ...",
- *     "refreshToken": "eyJhbGciOiJ..."
- *   },
- *   "message": "User signed in successfully"
- * }
  */
 export const signIn = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
@@ -207,19 +160,6 @@ export const signIn = asyncHandler(async (req: Request, res: Response): Promise<
  * @route POST /api/auth/sign-out
  * @param {Request} req - Express request object containing user ID
  * @param {Response} res - Express response object
- *
- * @example
- * // Request body
- * {
- *   "id": "123"
- * }
- *
- * // Response 200
- * {
- *   "status": 200,
- *   "data": {},
- *   "message": "User logged out successfully"
- * }
  */
 export const signOut = async (req: Request, res: Response): Promise<void> => {
   const userId = req.body?.id;
@@ -256,19 +196,6 @@ export const signOut = async (req: Request, res: Response): Promise<void> => {
  * @route POST /api/auth/refresh-token
  * @param {Request} req - Express request object containing refresh token
  * @param {Response} res - Express response object
- *
- * @example
- * // Request cookies should contain refreshToken
- *
- * // Response 200
- * {
- *   "status": 200,
- *   "data": {
- *     "accessToken": "eyJhbGciOiJ...",
- *     "refreshToken": "eyJhbGciOiJ..."
- *   },
- *   "message": "Access token refreshed"
- * }
  */
 export const refreshAccessToken = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -314,19 +241,6 @@ export const refreshAccessToken = async (req: Request, res: Response): Promise<v
  * @route POST /api/auth/forgot-password
  * @param {Request} req - Express request object containing user email
  * @param {Response} res - Express response object
- *
- * @example
- * // Request body
- * {
- *   "email": "john@example.com"
- * }
- *
- * // Response 200
- * {
- *   "status": 200,
- *   "data": {},
- *   "message": "Password reset instructions sent to email"
- * }
  */
 export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
   try {

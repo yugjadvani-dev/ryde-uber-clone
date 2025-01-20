@@ -29,7 +29,6 @@ const handleAvatarOperations = async (existingAvatarUrl: string | null): Promise
 /**
  * Retrieves all verified users with role 'user'
  * @route GET /api/users
- * @access Private/Admin
  */
 export const getAllUsers = async (_: Request, res: Response): Promise<void> => {
   try {
