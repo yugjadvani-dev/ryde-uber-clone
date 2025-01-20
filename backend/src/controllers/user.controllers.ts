@@ -6,9 +6,11 @@
 
 import { Request, Response } from 'express';
 import pool from '../db/db';
-import { validateRequiredFields, sendAuthResponse, handleAuthError } from '../utils/authUtils';
 import { v2 as cloudinary } from 'cloudinary';
 import uploadOnCloudinary, { cloudinaryFolderName } from '../utils/cloudinary';
+import { validateRequiredFields } from '../utils/validateRequiredFields';
+import { sendResponse } from '../utils/ApiResponse';
+import { handleError } from '../utils/ApiError';
 
 /**
  * Extracts and processes avatar identifier from Cloudinary URL
@@ -36,9 +38,9 @@ export const getAllUsers = async (_: Request, res: Response): Promise<void> => {
        FROM users 
        WHERE is_verified = true AND role = 'user'`,
     );
-    sendAuthResponse(res, 200, users.rows, 'Users fetched successfully');
+    sendResponse(res, 200, users.rows, 'Users fetched successfully');
   } catch (error) {
-    handleAuthError(res, error, 'Something went wrong while getting all users');
+    handleError(res, error, 'Something went wrong while getting all users');
   }
 };
 
@@ -51,10 +53,10 @@ export const getAllUsers = async (_: Request, res: Response): Promise<void> => {
 export const getUserById = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    
+
     const validation = validateRequiredFields({ id });
     if (!validation.isValid) {
-      sendAuthResponse(res, 400, {}, validation.error || 'User ID is required');
+      sendResponse(res, 400, {}, validation.error || 'User ID is required');
       return;
     }
 
@@ -66,13 +68,13 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
     );
 
     if (user.rowCount === 0) {
-      sendAuthResponse(res, 404, {}, 'User not found');
+      sendResponse(res, 404, {}, 'User not found');
       return;
     }
 
-    sendAuthResponse(res, 200, user.rows[0], 'User fetched successfully');
+    sendResponse(res, 200, user.rows[0], 'User fetched successfully');
   } catch (error) {
-    handleAuthError(res, error, 'Something went wrong while getting the user details');
+    handleError(res, error, 'Something went wrong while getting the user details');
   }
 };
 
@@ -94,7 +96,7 @@ export const updateProfileById = async (req: Request, res: Response): Promise<vo
     // Validate required fields
     const validation = validateRequiredFields({ id, firstname, lastname });
     if (!validation.isValid) {
-      sendAuthResponse(res, 400, {}, validation.error || 'Required fields are missing');
+      sendResponse(res, 400, {}, validation.error || 'Required fields are missing');
       return;
     }
 
@@ -107,7 +109,7 @@ export const updateProfileById = async (req: Request, res: Response): Promise<vo
     );
 
     if (existProfile.rowCount === 0) {
-      sendAuthResponse(res, 404, {}, 'Profile not found');
+      sendResponse(res, 404, {}, 'Profile not found');
       return;
     }
 
@@ -138,9 +140,9 @@ export const updateProfileById = async (req: Request, res: Response): Promise<vo
       [firstname, lastname, phone_number, avatar, id],
     );
 
-    sendAuthResponse(res, 200, profile.rows[0], 'Profile updated successfully');
+    sendResponse(res, 200, profile.rows[0], 'Profile updated successfully');
   } catch (error) {
-    handleAuthError(res, error, 'Something went wrong while updating the user details');
+    handleError(res, error, 'Something went wrong while updating the user details');
   }
 };
 
@@ -156,7 +158,7 @@ export const deleteProfileById = async (req: Request, res: Response): Promise<vo
 
     const validation = validateRequiredFields({ id });
     if (!validation.isValid) {
-      sendAuthResponse(res, 400, {}, validation.error || 'User ID is required');
+      sendResponse(res, 400, {}, validation.error || 'User ID is required');
       return;
     }
 
@@ -169,7 +171,7 @@ export const deleteProfileById = async (req: Request, res: Response): Promise<vo
     );
 
     if (existProfile.rowCount === 0) {
-      sendAuthResponse(res, 404, {}, 'Profile not found');
+      sendResponse(res, 404, {}, 'Profile not found');
       return;
     }
 
@@ -188,12 +190,12 @@ export const deleteProfileById = async (req: Request, res: Response): Promise<vo
       // Delete user from database
       await pool.query('DELETE FROM users WHERE id = $1', [id]);
     } catch (error) {
-      handleAuthError(res, error, 'Error deleting user resources');
+      handleError(res, error, 'Error deleting user resources');
       return;
     }
 
-    sendAuthResponse(res, 200, existProfile.rows[0], 'Profile deleted successfully');
+    sendResponse(res, 200, existProfile.rows[0], 'Profile deleted successfully');
   } catch (error) {
-    handleAuthError(res, error, 'Something went wrong while deleting profile');
+    handleError(res, error, 'Something went wrong while deleting profile');
   }
 };

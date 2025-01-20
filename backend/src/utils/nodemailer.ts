@@ -6,11 +6,7 @@
 
 import nodemailer from 'nodemailer';
 
-/**
- * SMTP Configuration for Gmail
- * @requires EMAIL_USER - Gmail email address from environment variables
- * @requires EMAIL_PASSWORD - Gmail app-specific password from environment variables
- */
+// SMTP Configuration for Gmai
 const configOptions = {
   host: 'smtp.gmail.com',
   port: 587,
@@ -20,7 +16,7 @@ const configOptions = {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD,
   },
-}
+};
 
 // Create reusable transporter object using SMTP configuration
 const transporter = nodemailer.createTransport(configOptions);

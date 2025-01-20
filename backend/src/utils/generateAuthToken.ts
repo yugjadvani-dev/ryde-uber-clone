@@ -1,8 +1,6 @@
 /**
  * Authentication Token Generator
  * This module provides functionality to generate JWT access tokens for authenticated users.
- * @requires ACCESS_TOKEN_SECRET - JWT secret key from environment variables
- * @requires ACCESS_TOKEN_EXPIRY - Token expiration time from environment variables
  */
 
 import jwt from 'jsonwebtoken';

@@ -2,7 +2,7 @@
  * Authentication Routes Module
  * Handles all authentication-related routes including sign up, sign in, sign out,
  * and token refresh operations.
- * 
+ *
  * Routes:
  * - POST /auth/sign-up: Register new user with avatar upload
  * - POST /auth/sign-in: Authenticate existing user
@@ -11,12 +11,7 @@
  */
 
 import express from 'express';
-import {
-  refreshAccessToken,
-  signIn,
-  signOut,
-  signUp
-} from '../controllers/auth.controllers';
+import { refreshAccessToken, signIn, signOut, signUp } from '../controllers/auth.controllers';
 import upload from '../middlewares/multer.middleware';
 import verifyJWT from '../middlewares/verifyJWT';
 
@@ -29,13 +24,13 @@ const router = express.Router();
  */
 router.post(
   '/sign-up',
-  upload.single('avatar'),  // Handle avatar file upload
-  signUp                    // Process user registration
+  upload.single('avatar'), // Handle avatar file upload
+  signUp, // Process user registration
 );
 
 router.post(
   '/sign-in',
-  signIn                    // Authenticate user credentials
+  signIn, // Authenticate user credentials
 );
 
 /**
@@ -44,13 +39,13 @@ router.post(
  */
 router.post(
   '/sign-out',
-  verifyJWT,               // Verify user is authenticated
-  signOut                  // Process user sign out
+  verifyJWT, // Verify user is authenticated
+  signOut, // Process user sign out
 );
 
 router.post(
   '/refresh-token',
-  refreshAccessToken       // Issue new access token
+  refreshAccessToken, // Issue new access token
 );
 
 export default router;

@@ -8,10 +8,10 @@ import { Request, Response, NextFunction } from 'express';
 
 /**
  * Wraps an async request handler to properly handle Promise rejections
- * 
+ *
  * @param requestHandler - Async Express route handler function
  * @returns Express middleware function that handles Promise rejections
- * 
+ *
  * @example
  * // Instead of:
  * app.get('/users', async (req, res) => {
@@ -22,16 +22,14 @@ import { Request, Response, NextFunction } from 'express';
  *     next(err);
  *   }
  * });
- * 
+ *
  * // You can write:
  * app.get('/users', asyncHandler(async (req, res) => {
  *   const users = await getUsers();
  *   res.json(users);
  * }));
  */
-const asyncHandler = (
-  requestHandler: (req: Request, res: Response, next: NextFunction) => Promise<void>
-) => {
+const asyncHandler = (requestHandler: (req: Request, res: Response, next: NextFunction) => Promise<void>) => {
   return (req: Request, res: Response, next: NextFunction) => {
     Promise.resolve(requestHandler(req, res, next)).catch((err) => next(err));
   };

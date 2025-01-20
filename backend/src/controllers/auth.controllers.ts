@@ -2,12 +2,6 @@
  * Authentication Controllers Module
  * Handles all authentication-related operations including user registration,
  * login, logout, and token management.
- * 
- * @module controllers/auth
- * @requires express
- * @requires jsonwebtoken
- * @requires ../db/db
- * @requires ../utils/authUtils
  */
 
 import { Request, Response } from 'express';
@@ -16,18 +10,16 @@ import { generateAuthToken } from '../utils/generateAuthToken';
 import asyncHandler from '../utils/asyncHandler';
 import uploadOnCloudinary from '../utils/cloudinary';
 import { generateRefreshToken } from '../utils/generateRefreshToken';
-import ApiError from '../utils/ApiError';
-import ApiResponse from '../utils/ApiResponse';
+import ApiError, { handleError } from '../utils/ApiError';
+import ApiResponse, { sendResponse } from '../utils/ApiResponse';
 import jwt from 'jsonwebtoken';
 import { sendUserWelcomeEmail } from '../emails/send-user-welcome-email';
 import {
-  validateRequiredFields,
-  checkUserExists,
   hashPassword,
   verifyPassword,
-  sendAuthResponse,
-  handleAuthError
 } from '../utils/authUtils';
+import { validateRequiredFields } from '../utils/validateRequiredFields';
+import { checkUserExists } from '../utils/checkUserExists';
 
 /**
  * Generate new access and refresh tokens for a user
@@ -38,20 +30,14 @@ import {
  */
 const generateAccessAndRefreshTokens = async (userId: number) => {
   try {
-    const userExists = await pool.query(
-      'SELECT id, role FROM users WHERE id = $1 LIMIT 1',
-      [userId]
-    );
+    const userExists = await pool.query('SELECT id, role FROM users WHERE id = $1 LIMIT 1', [userId]);
 
     const generatedAccessToken = generateAuthToken(userId, userExists.rows[0].role);
     const generatedRefreshToken = generateRefreshToken(userId);
 
     return { generatedAccessToken, generatedRefreshToken };
   } catch (error) {
-    throw new ApiError(
-      500,
-      'Something went wrong while generating refresh and access token'
-    );
+    throw new ApiError(500, 'Something went wrong while generating refresh and access token');
   }
 };
 
@@ -61,7 +47,7 @@ const generateAccessAndRefreshTokens = async (userId: number) => {
  * @param {Request} req - Express request object containing user registration data
  * @param {Response} res - Express response object
  * @throws {ApiError} If registration fails
- * 
+ *
  * @example
  * // Request body
  * {
@@ -71,7 +57,7 @@ const generateAccessAndRefreshTokens = async (userId: number) => {
  *   "password": "securepassword",
  *   "role": "user"
  * }
- * 
+ *
  * // Response 201
  * {
  *   "status": 201,
@@ -93,7 +79,7 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
     // Validate required fields
     const validation = validateRequiredFields({ firstname, lastname, email, password, role });
     if (!validation.isValid) {
-      sendAuthResponse(res, 400, {}, validation.error || 'All fields are required');
+      sendResponse(res, 400, {}, validation.error || 'All fields are required');
       return;
     }
 
@@ -111,7 +97,7 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
     const hashedPassword = await hashPassword(password);
     const newUser = await pool.query(
       'INSERT INTO users (firstname, lastname, email, password, avatar, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, email, firstname, lastname, avatar',
-      [firstname, lastname, email, hashedPassword, avatar, role]
+      [firstname, lastname, email, hashedPassword, avatar, role],
     );
 
     // Send welcome email
@@ -120,9 +106,9 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
       email: email,
     });
 
-    sendAuthResponse(res, 201, newUser.rows[0], 'User signed up successfully');
+    sendResponse(res, 201, newUser.rows[0], 'User signed up successfully');
   } catch (error) {
-    handleAuthError(res, error, 'Something went wrong while signing up');
+    handleError(res, error, 'Something went wrong while signing up');
   }
 };
 
@@ -131,14 +117,14 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
  * @route POST /api/auth/sign-in
  * @param {Request} req - Express request object containing login credentials
  * @param {Response} res - Express response object
- * 
+ *
  * @example
  * // Request body
  * {
  *   "email": "john@example.com",
  *   "password": "securepassword"
  * }
- * 
+ *
  * // Response 200
  * {
  *   "status": 200,
@@ -162,21 +148,21 @@ export const signIn = asyncHandler(async (req: Request, res: Response): Promise<
     const { email, password } = req.body;
     const validation = validateRequiredFields({ email, password });
     if (!validation.isValid) {
-      sendAuthResponse(res, 400, {}, validation.error || 'All fields are required');
+      sendResponse(res, 400, {}, validation.error || 'All fields are required');
       return;
     }
 
     // Verify user exists and is verified
     const { userData } = await checkUserExists(email);
     if (!userData.is_verified) {
-      sendAuthResponse(res, 400, {}, 'User is not verified');
+      sendResponse(res, 400, {}, 'User is not verified');
       return;
     }
 
     // Verify password
     const isPasswordCorrect = await verifyPassword(password, userData.password);
     if (!isPasswordCorrect) {
-      sendAuthResponse(res, 401, {}, 'Invalid credentials');
+      sendResponse(res, 401, {}, 'Invalid credentials');
       return;
     }
 
@@ -212,7 +198,7 @@ export const signIn = asyncHandler(async (req: Request, res: Response): Promise<
       .cookie('refreshToken', generatedRefreshToken, options)
       .json(new ApiResponse(200, user, 'User signed in successfully'));
   } catch (error) {
-    handleAuthError(res, error, 'Something went wrong while signing in');
+    handleError(res, error, 'Something went wrong while signing in');
   }
 });
 
@@ -221,13 +207,13 @@ export const signIn = asyncHandler(async (req: Request, res: Response): Promise<
  * @route POST /api/auth/sign-out
  * @param {Request} req - Express request object containing user ID
  * @param {Response} res - Express response object
- * 
+ *
  * @example
  * // Request body
  * {
  *   "id": "123"
  * }
- * 
+ *
  * // Response 200
  * {
  *   "status": 200,
@@ -239,7 +225,7 @@ export const signOut = async (req: Request, res: Response): Promise<void> => {
   const userId = req.body?.id;
 
   if (!userId) {
-    sendAuthResponse(res, 400, {}, 'User ID not provided');
+    sendResponse(res, 400, {}, 'User ID not provided');
     return;
   }
 
@@ -261,7 +247,7 @@ export const signOut = async (req: Request, res: Response): Promise<void> => {
       .clearCookie('refreshToken', cookieOptions)
       .json(new ApiResponse(200, {}, 'User logged out successfully'));
   } catch (error) {
-    handleAuthError(res, error, 'Internal server error');
+    handleError(res, error, 'Internal server error');
   }
 };
 
@@ -270,10 +256,10 @@ export const signOut = async (req: Request, res: Response): Promise<void> => {
  * @route POST /api/auth/refresh-token
  * @param {Request} req - Express request object containing refresh token
  * @param {Response} res - Express response object
- * 
+ *
  * @example
  * // Request cookies should contain refreshToken
- * 
+ *
  * // Response 200
  * {
  *   "status": 200,
@@ -292,10 +278,7 @@ export const refreshAccessToken = async (req: Request, res: Response): Promise<v
       throw new ApiError(401, 'Unauthorized request');
     }
 
-    const decodedToken = jwt.verify(
-      incomingRefreshToken,
-      process.env.REFRESH_TOKEN_SECRET as string
-    ) as jwt.JwtPayload;
+    const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET as string) as jwt.JwtPayload;
 
     const user = await pool.query('SELECT * FROM users WHERE id = $1', [decodedToken.userId]);
 
@@ -318,11 +301,11 @@ export const refreshAccessToken = async (req: Request, res: Response): Promise<v
         new ApiResponse(
           200,
           { accessToken: generatedAccessToken, refreshToken: generatedRefreshToken },
-          'Access token refreshed'
-        )
+          'Access token refreshed',
+        ),
       );
   } catch (error) {
-    handleAuthError(res, error, 'Invalid refresh token');
+    handleError(res, error, 'Invalid refresh token');
   }
 };
 
@@ -331,13 +314,13 @@ export const refreshAccessToken = async (req: Request, res: Response): Promise<v
  * @route POST /api/auth/forgot-password
  * @param {Request} req - Express request object containing user email
  * @param {Response} res - Express response object
- * 
+ *
  * @example
  * // Request body
  * {
  *   "email": "john@example.com"
  * }
- * 
+ *
  * // Response 200
  * {
  *   "status": 200,
@@ -350,7 +333,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
     const { email } = req.body;
 
     if (!email) {
-      sendAuthResponse(res, 400, {}, 'Email is required');
+      sendResponse(res, 400, {}, 'Email is required');
       return;
     }
 
@@ -358,15 +341,11 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
 
     // TODO: Generate password reset token and send email
     // This is a placeholder for the actual implementation
-    res.status(200).json(
-      new ApiResponse(
-        200,
-        {},
-        'If a user with that email exists, password reset instructions will be sent.'
-      )
-    );
+    res
+      .status(200)
+      .json(new ApiResponse(200, {}, 'If a user with that email exists, password reset instructions will be sent.'));
   } catch (error) {
-    handleAuthError(res, error, 'Error processing password reset request');
+    handleError(res, error, 'Error processing password reset request');
   }
 };
 
@@ -374,7 +353,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
  * TODO: Implement these additional authentication features
  * Each feature should follow the same pattern of comprehensive documentation
  * and error handling as the existing endpoints.
- * 
+ *
  * @todo Implement changeUserEmail - Allow users to update their email address
  * @todo Implement resetPassword - Allow users to reset their password using a token
  * @todo Implement changePassword - Allow users to change their password while logged in

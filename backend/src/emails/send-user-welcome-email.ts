@@ -1,7 +1,7 @@
 /**
  * User Welcome Email Module
  * Handles sending welcome emails to newly registered users using nodemailer.
- * 
+ *
  * @requires EMAIL_USER - Sender email address from environment variables
  */
 
@@ -12,8 +12,8 @@ import transporter from '../utils/nodemailer';
  * Interface defining required user data for sending welcome email
  */
 interface User {
-  name: string;   // User's full name
-  email: string;  // User's email address
+  name: string; // User's full name
+  email: string; // User's email address
 }
 
 /**
@@ -21,7 +21,7 @@ interface User {
  * @param user - Object containing user's name and email
  * @returns Promise that resolves when email is sent
  * @throws Error if email sending fails
- * 
+ *
  * @example
  * await sendUserWelcomeEmail({
  *   name: 'John Doe',
@@ -35,10 +35,11 @@ export const sendUserWelcomeEmail = async (user: User): Promise<void> => {
       to: user.email,
       subject: `Welcome to Ryde, ${user.name}!`,
       html: `<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome mail for user</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -113,7 +114,7 @@ export const sendUserWelcomeEmail = async (user: User): Promise<void> => {
         </div>
     </div>
 </body>
-</html>`
+</html>`,
     };
 
     await transporter.sendMail(mailOptions);

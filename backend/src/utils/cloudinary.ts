@@ -1,9 +1,6 @@
 /**
  * Cloudinary Integration Module
  * This module provides functionality for uploading images to Cloudinary and managing uploads.
- * @requires CLOUDINARY_CLOUD_NAME - Cloudinary cloud name from environment variables
- * @requires CLOUDINARY_API_KEY - Cloudinary API key from environment variables
- * @requires CLOUDINARY_API_SECRET - Cloudinary API secret from environment variables
  */
 
 import { v2 as cloudinary } from 'cloudinary';
@@ -26,7 +23,7 @@ export const cloudinaryFolderName = 'ryde-uber-clone';
  * Uploads an image to Cloudinary and handles local file cleanup
  * @param file - Local file path of the image to upload
  * @returns Promise resolving to the Cloudinary URL of the uploaded image, or null if upload fails
- * 
+ *
  * @example
  * const imageUrl = await uploadOnCloudinary('./uploads/profile.jpg');
  * if (imageUrl) {

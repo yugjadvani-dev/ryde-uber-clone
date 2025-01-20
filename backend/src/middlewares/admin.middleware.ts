@@ -1,7 +1,7 @@
 /**
  * Admin Authorization Middleware
  * Ensures that only users with admin role can access protected admin routes.
- * 
+ *
  * @requires ACCESS_TOKEN_SECRET - JWT secret key from environment variables
  */
 
@@ -12,15 +12,15 @@ import ApiResponse from '../utils/ApiResponse';
 /**
  * Middleware to verify admin access rights
  * Checks if the user has admin role in their JWT token
- * 
+ *
  * @param req - Express request object
  * @param res - Express response object
  * @param next - Express next function
- * 
+ *
  * @example
  * // In routes file:
  * router.post('/admin/users', adminMiddleware, adminController.getUsers);
- * 
+ *
  * @throws {401} If no token is provided or token is invalid
  * @throws {403} If user is not an admin
  */
@@ -35,10 +35,7 @@ const adminMiddleware = (req: Request, res: Response, next: NextFunction): void 
     }
 
     // Verify and decode the JWT token
-    const decoded = jwt.verify(
-      token,
-      process.env.ACCESS_TOKEN_SECRET as string
-    ) as JwtPayload;
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET as string) as JwtPayload;
 
     // Check if token contains valid admin credentials
     if (!decoded || !decoded.userId || decoded.role !== 'admin') {

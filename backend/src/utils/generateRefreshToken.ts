@@ -1,8 +1,6 @@
 /**
  * Refresh Token Generator
  * This module provides functionality to generate JWT refresh tokens for user sessions.
- * @requires REFRESH_TOKEN_SECRET - JWT secret key from environment variables
- * @requires REFRESH_TOKEN_EXPIRY - Token expiration time from environment variables
  */
 
 import jwt from 'jsonwebtoken';

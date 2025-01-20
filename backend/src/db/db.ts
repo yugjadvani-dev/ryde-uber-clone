@@ -1,7 +1,7 @@
 /**
  * Database Configuration Module
  * Sets up and manages the PostgreSQL connection pool for the application.
- * 
+ *
  * @requires DB_USER - Database username from environment variables
  * @requires DB_HOST - Database host from environment variables
  * @requires DB_NAME - Database name from environment variables

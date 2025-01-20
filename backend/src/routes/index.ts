@@ -12,7 +12,7 @@ import userRoutes from './user.routes';
 const router = express.Router();
 
 // Mount route modules
-router.use('/auth', authRoutes);  // Authentication routes (login, register, etc.)
-router.use('/user', userRoutes);  // User management routes (profile, settings, etc.)
+router.use('/auth', authRoutes); // Authentication routes (login, register, etc.)
+router.use('/user', userRoutes); // User management routes (profile, settings, etc.)
 
 export default router;

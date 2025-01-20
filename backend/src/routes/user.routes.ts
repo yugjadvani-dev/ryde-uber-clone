@@ -2,7 +2,7 @@
  * User Management Routes Module
  * Handles all user-related operations including profile management,
  * user listing, and profile updates.
- * 
+ *
  * Routes:
  * - GET /user/all-users: List all users (admin only)
  * - GET /user/:id: Get user profile by ID
@@ -11,12 +11,7 @@
  */
 
 import express from 'express';
-import {
-  deleteProfileById,
-  getAllUsers,
-  getUserById,
-  updateProfileById
-} from '../controllers/user.controllers';
+import { deleteProfileById, getAllUsers, getUserById, updateProfileById } from '../controllers/user.controllers';
 import adminMiddleware from '../middlewares/admin.middleware';
 import nonAdminMiddleware from '../middlewares/non-admin.middleware';
 import upload from '../middlewares/multer.middleware';
@@ -31,8 +26,8 @@ const router = express.Router();
  */
 router.get(
   '/all-users',
-  adminMiddleware,           // Verify admin privileges
-  getAllUsers               // Retrieve all user records
+  adminMiddleware, // Verify admin privileges
+  getAllUsers, // Retrieve all user records
 );
 
 /**
@@ -41,21 +36,21 @@ router.get(
  */
 router.get(
   '/:id',
-  verifyJWT,                // Verify user is authenticated
-  getUserById               // Get single user profile
+  verifyJWT, // Verify user is authenticated
+  getUserById, // Get single user profile
 );
 
 router.put(
   '/:id',
-  nonAdminMiddleware,       // Ensure user is not an admin
-  upload.single('avatar'),  // Handle avatar file upload
-  updateProfileById         // Process profile update
+  nonAdminMiddleware, // Ensure user is not an admin
+  upload.single('avatar'), // Handle avatar file upload
+  updateProfileById, // Process profile update
 );
 
 router.delete(
   '/:id',
-  nonAdminMiddleware,       // Ensure user is not an admin
-  deleteProfileById         // Process account deletion
+  nonAdminMiddleware, // Ensure user is not an admin
+  deleteProfileById, // Process account deletion
 );
 
 export default router;
