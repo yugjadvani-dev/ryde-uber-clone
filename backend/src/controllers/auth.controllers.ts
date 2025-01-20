@@ -28,7 +28,7 @@ import { checkUserExists } from '../utils/checkUserExists';
  * @returns {Promise<{generatedAccessToken: string, generatedRefreshToken: string}>} Object containing access and refresh tokens
  * @throws {ApiError} If token generation fails or user not found
  */
-const generateAccessAndRefreshTokens = async (userId: number) => {
+const generateAccessAndRefreshTokens = async (userId: number): Promise<{ generatedAccessToken: string; generatedRefreshToken: string; }> => {
   try {
     const userExists = await pool.query('SELECT id, role FROM users WHERE id = $1 LIMIT 1', [userId]);
 

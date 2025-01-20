@@ -2,8 +2,6 @@
  * Non-Admin/Non-Driver Authorization Middleware
  * Ensures that only regular users (non-admin, non-driver) can access protected user routes.
  * This is useful for routes that should only be accessible to regular passengers.
- *
- * @requires ACCESS_TOKEN_SECRET - JWT secret key from environment variables
  */
 
 import { Request, Response, NextFunction } from 'express';

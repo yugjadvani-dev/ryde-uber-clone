@@ -47,8 +47,9 @@ export const getAllUsers = async (_: Request, res: Response): Promise<void> => {
 /**
  * Retrieves a single user by their ID
  * @route GET /api/users/:id
- * @param id - User ID
  * @access Private
+ * @param req
+ * @param res
  */
 export const getUserById = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -81,12 +82,13 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
 /**
  * Updates user profile information
  * @route PUT /api/users/:id
- * @param id - User ID
  * @body firstname - User's first name
  * @body lastname - User's last name
  * @body phone_number - User's phone number (optional)
  * @body avatar - User's profile picture (optional, file upload)
  * @access Private
+ * @param req
+ * @param res
  */
 export const updateProfileById = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -149,8 +151,8 @@ export const updateProfileById = async (req: Request, res: Response): Promise<vo
 /**
  * Deletes a user profile and associated resources
  * @route DELETE /api/users/:id
- * @param id - User ID
- * @access Private/Admin
+ * @param req
+ * @param res
  */
 export const deleteProfileById = async (req: Request, res: Response): Promise<void> => {
   try {

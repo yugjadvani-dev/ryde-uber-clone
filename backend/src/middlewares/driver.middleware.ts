@@ -1,8 +1,6 @@
 /**
  * Driver Authorization Middleware
  * Ensures that only users with driver role can access protected driver routes.
- *
- * @requires ACCESS_TOKEN_SECRET - JWT secret key from environment variables
  */
 
 import { Request, Response, NextFunction } from 'express';

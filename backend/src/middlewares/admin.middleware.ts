@@ -1,8 +1,6 @@
 /**
  * Admin Authorization Middleware
  * Ensures that only users with admin role can access protected admin routes.
- *
- * @requires ACCESS_TOKEN_SECRET - JWT secret key from environment variables
  */
 
 import { Request, Response, NextFunction } from 'express';

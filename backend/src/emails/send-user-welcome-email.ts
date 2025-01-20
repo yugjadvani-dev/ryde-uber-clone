@@ -1,8 +1,6 @@
 /**
  * User Welcome Email Module
  * Handles sending welcome emails to newly registered users using nodemailer.
- *
- * @requires EMAIL_USER - Sender email address from environment variables
  */
 
 import { SendMailOptions } from 'nodemailer';

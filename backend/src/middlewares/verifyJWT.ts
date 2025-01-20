@@ -1,8 +1,6 @@
 /**
  * JWT Authentication Middleware
  * Verifies JWT tokens in requests and ensures user authentication.
- *
- * @requires ACCESS_TOKEN_SECRET - JWT secret key from environment variables
  */
 
 import { Request, Response, NextFunction } from 'express';
