@@ -5,26 +5,13 @@
 
 import { SendMailOptions } from 'nodemailer';
 import transporter from '../utils/nodemailer';
-
-/**
- * Interface defining required user data for sending welcome email
- */
-interface User {
-  name: string; // User's full name
-  email: string; // User's email address
-}
+import { User } from '../types/email.type';
 
 /**
  * Sends a welcome email to a newly registered user
  * @param user - Object containing user's name and email
  * @returns Promise that resolves when email is sent
  * @throws Error if email sending fails
- *
- * @example
- * await sendUserWelcomeEmail({
- *   name: 'John Doe',
- *   email: 'john@example.com'
- * });
  */
 export const sendUserWelcomeEmail = async (user: User): Promise<void> => {
   try {
@@ -116,9 +103,9 @@ export const sendUserWelcomeEmail = async (user: User): Promise<void> => {
     };
 
     await transporter.sendMail(mailOptions);
-    console.log(' Welcome email sent successfully to:', user.email);
+    console.log('Welcome email sent successfully to:', user.email);
   } catch (error) {
-    console.error(' Error sending welcome email:', error);
+    console.error('Error while sending welcome email:', error);
     throw error;
   }
 };

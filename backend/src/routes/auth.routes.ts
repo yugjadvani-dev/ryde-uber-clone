@@ -11,7 +11,7 @@
  */
 
 import express from 'express';
-import { refreshAccessToken, signIn, signOut, signUp } from '../controllers/auth.controllers';
+import { forgotPassword, refreshAccessToken, signIn, signOut, signUp } from '../controllers/auth.controllers';
 import upload from '../middlewares/multer.middleware';
 import verifyJWT from '../middlewares/verifyJWT';
 
@@ -32,6 +32,11 @@ router.post(
   '/sign-in',
   signIn, // Authenticate user credentials
 );
+
+router.post(
+  '/forgot-password',
+  forgotPassword, // Forgot user password
+)
 
 /**
  * Protected Routes

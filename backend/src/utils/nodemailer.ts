@@ -6,7 +6,7 @@
 
 import nodemailer from 'nodemailer';
 
-// SMTP Configuration for Gmai
+// SMTP Configuration for Gmail
 const configOptions = {
   host: 'smtp.gmail.com',
   port: 587,

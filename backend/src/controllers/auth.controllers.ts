@@ -20,6 +20,18 @@ import {
 } from '../utils/authUtils';
 import { validateRequiredFields } from '../utils/validateRequiredFields';
 import { checkUserExists } from '../utils/checkUserExists';
+import { otpGenerator } from '../utils/otp-generator';
+import { sendForgotOtpEmail } from '../emails/send-forgot-otp-email';
+
+// Otp generator options
+const options = {
+  digits: true,
+  lowerCaseAlphabets: true,
+  upperCaseAlphabets: false,
+  specialChars: true,
+};
+
+const usersWithOTP = new Map<string, { otp: string; expiresAt: number }>();
 
 /**
  * Generate new access and refresh tokens for a user
@@ -246,18 +258,34 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
   try {
     const { email } = req.body;
 
-    if (!email) {
-      sendResponse(res, 400, {}, 'Email is required');
+    // Validate required fields
+    const validation = validateRequiredFields({ email });
+    if (!validation.isValid) {
+      sendResponse(res, 400, {}, validation.error || 'Email field are required');
       return;
     }
 
+    // Verify user exists and is verified
     const { userData } = await checkUserExists(email);
+    if (!userData.is_verified) {
+      sendResponse(res, 400, {}, 'User is not verified');
+      return;
+    }
 
-    // TODO: Generate password reset token and send email
-    // This is a placeholder for the actual implementation
+    // Generate OTP
+    const otp = otpGenerator(6, options);
+
+    usersWithOTP.set(email, {otp, expiresAt: Date.now() + 120000})
+
+    // Send Forgot password email
+    await sendForgotOtpEmail({
+      name: `${userData.firstname} ${userData.lastname}`,
+      email: userData.email,
+    }, otp)
+
     res
       .status(200)
-      .json(new ApiResponse(200, {}, 'If a user with that email exists, password reset instructions will be sent.'));
+      .json(new ApiResponse(200, {}, 'OTP sent successfully.. expired in 2 minutes..'));
   } catch (error) {
     handleError(res, error, 'Error processing password reset request');
   }
