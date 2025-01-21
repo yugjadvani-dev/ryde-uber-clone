@@ -15,3 +15,16 @@ CREATE TABLE users (
                        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 ```
+
+**OTP codes**
+
+```postgresql
+CREATE TABLE otp_codes (
+                           id SERIAL PRIMARY KEY,
+                           user_id INT NOT NULL,
+                           otp VARCHAR(6) NOT NULL,
+                           otp_expiry TIMESTAMP NOT NULL,
+                           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                           FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+```

@@ -11,7 +11,14 @@
  */
 
 import express from 'express';
-import { forgotPassword, refreshAccessToken, signIn, signOut, signUp } from '../controllers/auth.controllers';
+import {
+  forgotPassword,
+  refreshAccessToken, resetPassword,
+  signIn,
+  signOut,
+  signUp,
+  verifyEmail, verifyOTP,
+} from '../controllers/auth.controllers';
 import upload from '../middlewares/multer.middleware';
 import verifyJWT from '../middlewares/verifyJWT';
 
@@ -36,6 +43,21 @@ router.post(
 router.post(
   '/forgot-password',
   forgotPassword, // Forgot user password
+)
+
+router.post(
+  '/verify-otp',
+  verifyOTP, // Verify otp
+)
+
+router.post(
+  '/verify-email',
+  verifyEmail, // Verify Email
+)
+
+router.post(
+  '/reset-password',
+  resetPassword, // Reset password
 )
 
 /**

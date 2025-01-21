@@ -6,7 +6,8 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import pool from '../db/db';
-import ApiResponse from '../utils/ApiResponse';
+import { sendResponse } from '../utils/ApiResponse';
+import { handleError } from '../utils/ApiError';
 
 /**
  * Middleware to verify JWT authentication tokens
@@ -33,7 +34,7 @@ const verifyJWT = async (req: Request, res: Response, next: NextFunction): Promi
     const token = req.cookies?.accessToken || req.header('Authorization')?.replace('Bearer ', '');
 
     if (!token) {
-      res.status(401).json(new ApiResponse(401, {}, 'Unauthorized request'));
+      sendResponse(res, 401, {}, 'Unauthorized request')
       return;
     }
 
@@ -44,14 +45,14 @@ const verifyJWT = async (req: Request, res: Response, next: NextFunction): Promi
     const { rows } = await pool.query('SELECT id, email FROM users WHERE id = $1 LIMIT 1', [decodedToken.userId]);
 
     if (rows.length === 0) {
-      res.status(401).json(new ApiResponse(401, {}, 'Invalid Access Token'));
+      sendResponse(res, 401, {}, 'Invalid Access Token')
       return;
     }
 
     next();
   } catch (error) {
     console.error('❌ JWT Verification Error:', error);
-    res.status(401).json(new ApiResponse(401, {}, 'Invalid access token'));
+    handleError(res, error, 'Invalid access token');
   }
 };
 

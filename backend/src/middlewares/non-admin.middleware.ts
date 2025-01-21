@@ -6,7 +6,8 @@
 
 import { Request, Response, NextFunction } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
-import ApiResponse from '../utils/ApiResponse';
+import { sendResponse } from '../utils/ApiResponse';
+import { handleError } from '../utils/ApiError';
 
 /**
  * Middleware to verify regular user access rights
@@ -29,7 +30,7 @@ const nonAdminMiddleware = (req: Request, res: Response, next: NextFunction): vo
     const token = req.header('Authorization')?.replace('Bearer ', '');
 
     if (!token) {
-      res.status(401).json(new ApiResponse(401, {}, 'No authentication token provided'));
+      sendResponse(res, 401, {}, 'No authentication token provided')
       return;
     }
 
@@ -38,7 +39,7 @@ const nonAdminMiddleware = (req: Request, res: Response, next: NextFunction): vo
 
     // Check if user is an admin or driver
     if (!decoded || decoded.role === 'admin' || decoded.role === 'driver') {
-      res.status(403).json(new ApiResponse(403, {}, 'Access denied. This route is only accessible to passengers'));
+      sendResponse(res, 403, {}, 'Access denied. This route is only accessible to passengers')
       return;
     }
 
@@ -46,7 +47,7 @@ const nonAdminMiddleware = (req: Request, res: Response, next: NextFunction): vo
     next();
   } catch (error) {
     console.error(' User Authorization Error:', error);
-    res.status(401).json(new ApiResponse(401, {}, 'Token is not valid'));
+    handleError(res, error, 'Token is not valid');
   }
 };
 

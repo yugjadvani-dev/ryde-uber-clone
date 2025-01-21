@@ -5,7 +5,8 @@
 
 import { Request, Response, NextFunction } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
-import ApiResponse from '../utils/ApiResponse';
+import { sendResponse } from '../utils/ApiResponse';
+import { handleError } from '../utils/ApiError';
 
 /**
  * Middleware to verify admin access rights
@@ -28,7 +29,7 @@ const adminMiddleware = (req: Request, res: Response, next: NextFunction): void 
     const token = req.header('Authorization')?.replace('Bearer ', '');
 
     if (!token) {
-      res.status(401).json(new ApiResponse(401, {}, 'No authentication token provided'));
+      sendResponse(res, 401, {}, 'No authentication token provided')
       return;
     }
 
@@ -37,7 +38,7 @@ const adminMiddleware = (req: Request, res: Response, next: NextFunction): void 
 
     // Check if token contains valid admin credentials
     if (!decoded || !decoded.userId || decoded.role !== 'admin') {
-      res.status(403).json(new ApiResponse(403, {}, 'Admin access required'));
+      sendResponse(res, 403, {}, 'Admin access required')
       return;
     }
 
@@ -45,7 +46,7 @@ const adminMiddleware = (req: Request, res: Response, next: NextFunction): void 
     next();
   } catch (error) {
     console.error('❌ Admin Authorization Error:', error);
-    res.status(401).json(new ApiResponse(401, {}, 'Token is not valid'));
+    handleError(res, error, 'Token is not valid');
   }
 };
 

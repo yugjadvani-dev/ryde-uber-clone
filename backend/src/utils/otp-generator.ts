@@ -50,3 +50,13 @@ export function otpGenerator(length: number = 10, options: GenerateOptions = {})
 
   return password;
 }
+
+/**
+ * Add minutes to a date
+ * @param date - Date to add minutes to
+ * @param minutes - Minutes to add
+ * @returns A new Date object with the specified number of minutes added to the original date.
+ */
+export function addMinutesToDate(date: Date, minutes: number) {
+  return new Date(date.getTime() + minutes * 60000);
+}
