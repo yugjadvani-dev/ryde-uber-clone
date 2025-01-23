@@ -1,4 +1,5 @@
--- SELECT * from users;
+SELECT * from users;
+-- SELECT * FROM otp_codes;
 
 -- CREATE TABLE otp_codes (
 --   id SERIAL PRIMARY KEY,

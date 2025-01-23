@@ -12,6 +12,7 @@
 
 import express from 'express';
 import {
+  changePassword,
   forgotPassword,
   refreshAccessToken, resetPassword,
   signIn,
@@ -74,5 +75,11 @@ router.post(
   '/refresh-token',
   refreshAccessToken, // Issue new access token
 );
+
+router.post(
+  '/change-password',
+  verifyJWT, // Verify user is authenticated
+  changePassword, // Change Password
+)
 
 export default router;

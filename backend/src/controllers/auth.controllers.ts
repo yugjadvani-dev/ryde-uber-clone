@@ -434,9 +434,42 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
 /**
  * Change Password Allow users to change their password while logged in
  * @route POST /api/auth/change-password
- * @param {Request} req - Express request object containing
+ * @param {Request} req - Express request object containing email, currentPassword and newPassword
  * @param {Response} res - Express response object
  */
+export const changePassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Extract email and newPassword from request
+    const {email, currentPassword, newPassword} = req.body;
+    const validation = validateRequiredFields({ email, currentPassword, newPassword });
+    if (!validation.isValid) {
+      sendResponse(res, 400, {}, validation.error || 'All fields are required');
+      return;
+    }
+
+    // Verify user exists
+    const { userData } = await checkUserExists(email);
+
+    // Verify password
+    const isPasswordCorrect = await verifyPassword(currentPassword, userData.password);
+    if (!isPasswordCorrect) {
+      sendResponse(res, 401, {}, 'Invalid credentials');
+      return;
+    }
+
+    // Hash password and update with user
+    const hashedPassword = await hashPassword(newPassword);
+
+    await pool.query(
+      'UPDATE users set password = $1 WHERE id = $2',
+      [hashedPassword, userData.id],
+    );
+
+    sendResponse(res, 200, {}, 'Change password successfully');
+  } catch (error) {
+    handleError(res, error, 'Something went wrong while change password');
+  }
+}
 
 /**
  * TODO: Implement these additional authentication features
