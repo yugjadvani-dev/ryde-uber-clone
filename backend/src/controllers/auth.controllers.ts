@@ -477,6 +477,4 @@ export const changePassword = async (req: Request, res: Response): Promise<void>
  * and error handling as the existing endpoints.
  *
  * @todo Implement changeUserEmail - Allow users to update their email address
- * @todo Implement changePassword - Allow users to change their password while logged in
- * @todo Implement resendVerificationEmail - Resend verification email
  */
