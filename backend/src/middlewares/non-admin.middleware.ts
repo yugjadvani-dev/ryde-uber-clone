@@ -1,6 +1,6 @@
 /**
- * Non-Admin/Non-Driver Authorization Middleware
- * Ensures that only regular users (non-admin, non-driver) can access protected user routes.
+ * Non-Admin Authorization Middleware
+ * Ensures that only regular users (non-admin) can access protected user routes.
  * This is useful for routes that should only be accessible to regular passengers.
  */
 
@@ -11,7 +11,7 @@ import { handleError } from '../utils/ApiError';
 
 /**
  * Middleware to verify regular user access rights
- * Checks if the user is neither an admin nor a driver
+ * Checks if the user is neither an admin
  *
  * @param req - Express request object
  * @param res - Express response object
@@ -22,7 +22,7 @@ import { handleError } from '../utils/ApiError';
  * router.post('/passenger/book', nonAdminMiddleware, passengerController.bookRide);
  *
  * @throws {401} If no token is provided or token is invalid
- * @throws {403} If user is an admin or driver
+ * @throws {403} If user is an admin
  */
 const nonAdminMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   try {
@@ -37,8 +37,8 @@ const nonAdminMiddleware = (req: Request, res: Response, next: NextFunction): vo
     // Verify and decode the JWT token
     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET as string) as JwtPayload;
 
-    // Check if user is an admin or driver
-    if (!decoded || decoded.role === 'admin' || decoded.role === 'driver') {
+    // Check if user is an admin
+    if (!decoded || decoded.role === 'admin') {
       sendResponse(res, 403, {}, 'Access denied. This route is only accessible to passengers')
       return;
     }

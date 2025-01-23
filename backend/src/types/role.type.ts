@@ -5,8 +5,7 @@
  *
  * @description
  * - user: Regular passenger who can book rides
- * - driver: Verified driver who can accept and complete rides
  * - admin: System administrator with full access privileges
  */
 
-export type Role = 'user' | 'driver' | 'admin';
+export type Role = 'user' | 'admin';

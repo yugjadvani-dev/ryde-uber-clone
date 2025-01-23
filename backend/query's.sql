@@ -1,4 +1,4 @@
-SELECT * from users;
+-- SELECT * from users;
 -- SELECT * FROM otp_codes;
 
 -- CREATE TABLE otp_codes (
@@ -13,3 +13,6 @@ SELECT * from users;
 -- ALTER TABLE users
 -- ADD COLUMN avatar VARCHAR(255),
 -- ADD COLUMN refresh_token VARCHAR(255);
+
+-- DROP TABLE users;
+-- DROP TABLE otp_codes;
