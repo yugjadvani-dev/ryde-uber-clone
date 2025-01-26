@@ -3,14 +3,14 @@
  * Provides a standardized way to create and handle API errors across the application.
  */
 
-import { sendResponse } from './ApiResponse';
+import { sendResponse } from './api-response.utils';
 import { Response } from 'express';
 
 /**
  * Interface defining the structure of API errors
- * @interface ApiErrorType
+ * @interface ApiErrorTypeUtils
  */
-interface ApiErrorType {
+interface ApiErrorTypeUtils {
   statusCode: number; // HTTP status code
   data: unknown; // Additional error data
   message: string; // Error message
@@ -21,7 +21,7 @@ interface ApiErrorType {
 
 /**
  * Custom error class for handling API errors
- * Extends the built-in Error class and implements ApiErrorType interface
+ * Extends the built-in Error class and implements ApiErrorTypeUtils interface
  *
  * @example
  * throw new ApiError(404, 'User not found');
@@ -33,7 +33,7 @@ interface ApiErrorType {
  *   ['Invalid email format', 'Password too short']
  * );
  */
-export default class ApiError extends Error implements ApiErrorType {
+export default class ApiError extends Error implements ApiErrorTypeUtils {
   public statusCode: number;
   public data: unknown;
   public message: string;

@@ -4,7 +4,7 @@
  */
 
 import { SendMailOptions } from 'nodemailer';
-import transporter from '../utils/nodemailer';
+import transporter from '../utils/nodemailer.utils';
 import { User } from '../types/email.type';
 
 /**

@@ -5,9 +5,9 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { sendResponse } from '../utils/ApiResponse';
+import { sendResponse } from '../utils/api-response.utils';
 import jwt, { JwtPayload } from 'jsonwebtoken';
-import { handleError } from '../utils/ApiError';
+import { handleError } from '../utils/api-error.utils';
 
 /**
  * Middleware to verify driver access rights

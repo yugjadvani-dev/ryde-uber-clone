@@ -11,7 +11,7 @@ import jwt from 'jsonwebtoken';
  * @returns JWT refresh token string
  * @throws Error if REFRESH_TOKEN_SECRET is not configured
  */
-export const generateRefreshToken = (userId: number): string => {
+export const generateRefreshTokenUtils = (userId: number): string => {
   if (!process.env.REFRESH_TOKEN_SECRET) {
     throw new Error('REFRESH_TOKEN_SECRET is not configured');
   }

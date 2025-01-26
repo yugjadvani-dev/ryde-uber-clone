@@ -13,7 +13,7 @@ import { Role } from '../types/role.type';
  * @returns JWT access token string
  * @throws Error if ACCESS_TOKEN_SECRET is not configured
  */
-export const generateAuthToken = (userId: number, role: Role): string => {
+export const generateAuthTokenUtils = (userId: number, role: Role): string => {
   if (!process.env.ACCESS_TOKEN_SECRET) {
     throw new Error('ACCESS_TOKEN_SECRET is not configured');
   }

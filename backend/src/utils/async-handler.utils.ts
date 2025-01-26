@@ -24,15 +24,15 @@ import { Request, Response, NextFunction } from 'express';
  * });
  *
  * // You can write:
- * app.get('/users', asyncHandler(async (req, res) => {
+ * app.get('/users', asyncHandlerUtils(async (req, res) => {
  *   const users = await getUsers();
  *   res.json(users);
  * }));
  */
-const asyncHandler = (requestHandler: (req: Request, res: Response, next: NextFunction) => Promise<void>) => {
+const asyncHandlerUtils = (requestHandler: (req: Request, res: Response, next: NextFunction) => Promise<void>) => {
   return (req: Request, res: Response, next: NextFunction) => {
     Promise.resolve(requestHandler(req, res, next)).catch((err) => next(err));
   };
 };
 
-export default asyncHandler;
+export default asyncHandlerUtils;

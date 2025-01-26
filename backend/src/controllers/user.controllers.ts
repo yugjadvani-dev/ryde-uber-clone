@@ -7,10 +7,10 @@
 import { Request, Response } from 'express';
 import pool from '../db/db';
 import { v2 as cloudinary } from 'cloudinary';
-import uploadOnCloudinary, { cloudinaryFolderName } from '../utils/cloudinary';
-import { validateRequiredFields } from '../utils/validateRequiredFields';
-import { sendResponse } from '../utils/ApiResponse';
-import { handleError } from '../utils/ApiError';
+import uploadOnCloudinary, { cloudinaryFolderName } from '../utils/cloudinary.utils';
+import { validateRequiredFieldsUtils } from '../utils/validate-required-fields.utils';
+import { sendResponse } from '../utils/api-response.utils';
+import { handleError } from '../utils/api-error.utils';
 
 /**
  * Extracts and processes avatar identifier from Cloudinary URL
@@ -54,7 +54,7 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
   try {
     const { id } = req.params;
 
-    const validation = validateRequiredFields({ id });
+    const validation = validateRequiredFieldsUtils({ id });
     if (!validation.isValid) {
       sendResponse(res, 400, {}, validation.error || 'User ID is required');
       return;
@@ -95,7 +95,7 @@ export const updateProfileById = async (req: Request, res: Response): Promise<vo
     const { firstname, lastname, phone_number } = req.body;
 
     // Validate required fields
-    const validation = validateRequiredFields({ id, firstname, lastname });
+    const validation = validateRequiredFieldsUtils({ id, firstname, lastname });
     if (!validation.isValid) {
       sendResponse(res, 400, {}, validation.error || 'Required fields are missing');
       return;
@@ -157,7 +157,7 @@ export const deleteProfileById = async (req: Request, res: Response): Promise<vo
   try {
     const { id } = req.params;
 
-    const validation = validateRequiredFields({ id });
+    const validation = validateRequiredFieldsUtils({ id });
     if (!validation.isValid) {
       sendResponse(res, 400, {}, validation.error || 'User ID is required');
       return;

@@ -10,20 +10,20 @@ import { Response } from 'express';
  *
  * @example
  * // Success response
- * return new ApiResponse(200, { user: userData }, 'User created successfully');
+ * return new ApiResponseUtils(200, { user: userData }, 'User created successfully');
  *
  * @example
  * // Error response
- * return new ApiResponse(404, {}, 'User not found');
+ * return new ApiResponseUtils(404, {}, 'User not found');
  */
-export default class ApiResponse {
+export default class ApiResponseUtils {
   statusCode: number; // HTTP status code
   data: object; // Response payload
   message: string; // Response message
   success: boolean; // Response status flag
 
   /**
-   * Creates an instance of ApiResponse
+   * Creates an instance of ApiResponseUtils
    * @param statusCode - HTTP status code (e.g., 200, 201, 400, 404)
    * @param data - Response data object
    * @param message - Response message (defaults to 'Success')
@@ -45,5 +45,5 @@ export default class ApiResponse {
  * @param message - Response message
  */
 export const sendResponse = (res: Response, statusCode: number, data: any, message: string): void => {
-  res.status(statusCode).json(new ApiResponse(statusCode, data, message));
+  res.status(statusCode).json(new ApiResponseUtils(statusCode, data, message));
 };

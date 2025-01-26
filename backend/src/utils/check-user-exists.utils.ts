@@ -7,7 +7,7 @@ import pool from '../db/db';
  * @returns Object containing existence status and optional user data
  * @throws Error when user existence doesn't match expectation
  */
-export const checkUserExists = async (
+export const checkUserExistsUtils = async (
   email: string,
   expectUserToExist: boolean = true,
 ): Promise<{ exists: boolean; userData?: any }> => {

@@ -6,8 +6,8 @@
 
 import { Request, Response, NextFunction } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
-import { sendResponse } from '../utils/ApiResponse';
-import { handleError } from '../utils/ApiError';
+import { sendResponse } from '../utils/api-response.utils';
+import { handleError } from '../utils/api-error.utils';
 
 /**
  * Middleware to verify regular user access rights

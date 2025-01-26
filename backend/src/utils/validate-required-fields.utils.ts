@@ -11,12 +11,12 @@ interface ValidationResult {
  * @param fields - Object containing field names and their values
  * @returns ValidationResult indicating if all required fields are present
  * @example
- * const validation = validateRequiredFields({ email: 'user@example.com', password: '' });
+ * const validation = validateRequiredFieldsUtils({ email: 'user@example.com', password: '' });
  * if (!validation.isValid) {
  *   // Handle missing fields
  * }
  */
-export const validateRequiredFields = (fields: Record<string, any>): ValidationResult => {
+export const validateRequiredFieldsUtils = (fields: Record<string, any>): ValidationResult => {
   const missingFields = Object.entries(fields)
     .filter(([_, value]) => !value)
     .map(([key]) => key);

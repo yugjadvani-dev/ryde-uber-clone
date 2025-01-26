@@ -1,28 +1,30 @@
 /**
  * Authentication Controllers Module
- * Handles all authentication-related operations including user registration,
- * login, logout, and token management.
+ * Handles all authentication-related operations including user and admin signUp,
+ * signIn, signOut, verifyEmail, forgotPassword, verifyOTP, resetPassword, changePassword and refreshAccessToken management.
  */
 
 import { Request, Response } from 'express';
 import pool from '../db/db';
-import { generateAuthToken } from '../utils/generateAuthToken';
-import asyncHandler from '../utils/asyncHandler';
-import uploadOnCloudinary from '../utils/cloudinary';
-import { generateRefreshToken } from '../utils/generateRefreshToken';
-import ApiError, { handleError } from '../utils/ApiError';
-import ApiResponse, { sendResponse } from '../utils/ApiResponse';
+import { generateAuthTokenUtils } from '../utils/generate-auth-token.utils';
+import asyncHandlerUtils from '../utils/async-handler.utils';
+import uploadOnCloudinary from '../utils/cloudinary.utils';
+import { generateRefreshTokenUtils } from '../utils/generate-refresh-token.utils';
+import ApiError, { handleError } from '../utils/api-error.utils';
+import ApiResponseUtils, { sendResponse } from '../utils/api-response.utils';
 import jwt from 'jsonwebtoken';
 import { sendUserWelcomeEmail } from '../emails/send-user-welcome-email';
 import {
   hashPassword,
   verifyPassword,
-} from '../utils/authUtils';
-import { validateRequiredFields } from '../utils/validateRequiredFields';
-import { checkUserExists } from '../utils/checkUserExists';
-import { addMinutesToDate, otpGenerator } from '../utils/otp-generator';
+} from '../utils/auth.utils';
+import { validateRequiredFieldsUtils } from '../utils/validate-required-fields.utils';
+import { checkUserExistsUtils } from '../utils/check-user-exists.utils';
+import { addMinutesToDate, otpGenerator } from '../utils/otp-generator.utils';
 import { sendForgotOtpEmail } from '../emails/send-forgot-otp-email';
 import { sendEmailVerificationEmail } from '../emails/send-email-verification-email';
+import { Role } from '../types/role.type';
+import { generateAccessAndRefreshTokens } from '../utils/generate-access-and-refresh-tokens.utils';
 
 // Otp generator options
 const options = {
@@ -33,31 +35,10 @@ const options = {
 };
 
 /**
- * Generate new access and refresh tokens for a user
- * @private
- * @param userId - User's ID to generate tokens for
- * @returns {Promise<{generatedAccessToken: string, generatedRefreshToken: string}>} Object containing access and refresh tokens
- * @throws {ApiError} If token generation fails or user not found
- */
-const generateAccessAndRefreshTokens = async (userId: number): Promise<{ generatedAccessToken: string; generatedRefreshToken: string; }> => {
-  try {
-    const userExists = await pool.query('SELECT id, role FROM users WHERE id = $1 LIMIT 1', [userId]);
-
-    const generatedAccessToken = generateAuthToken(userId, userExists.rows[0].role);
-    const generatedRefreshToken = generateRefreshToken(userId);
-
-    return { generatedAccessToken, generatedRefreshToken };
-  } catch (error) {
-    throw new ApiError(500, 'Something went wrong while generating refresh and access token');
-  }
-};
-
-/**
  * Register a new user
  * @route POST /api/auth/sign-up
  * @param {Request} req - Express request object containing user registration data
  * @param {Response} res - Express response object
- * @throws {ApiError} If registration fails
  */
 export const signUp = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -65,14 +46,14 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
     const { firstname, lastname, email, password, role } = req.body;
 
     // Validate required fields
-    const validation = validateRequiredFields({ firstname, lastname, email, password, role });
+    const validation = validateRequiredFieldsUtils({ firstname, lastname, email, password, role });
     if (!validation.isValid) {
       sendResponse(res, 400, {}, validation.error || 'All fields are required');
       return;
     }
 
     // Check if user already exists
-    await checkUserExists(email, false);
+    await checkUserExistsUtils(email, false);
 
     // Handle avatar upload if provided
     const avatarLocalPath = req.file?.path;
@@ -106,18 +87,18 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
  * @param {Request} req - Express request object containing login credentials
  * @param {Response} res - Express response object
  */
-export const signIn = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+export const signIn = asyncHandlerUtils(async (req: Request, res: Response): Promise<void> => {
   try {
     // Extract and validate credentials
     const { email, password } = req.body;
-    const validation = validateRequiredFields({ email, password });
+    const validation = validateRequiredFieldsUtils({ email, password });
     if (!validation.isValid) {
       sendResponse(res, 400, {}, validation.error || 'All fields are required');
       return;
     }
 
     // Verify user exists and is verified
-    const { userData } = await checkUserExists(email);
+    const { userData } = await checkUserExistsUtils(email);
     if (!userData.is_verified) {
       sendResponse(res, 400, {}, 'User is not verified');
       return;
@@ -131,7 +112,7 @@ export const signIn = asyncHandler(async (req: Request, res: Response): Promise<
     }
 
     // Generate authentication tokens
-    const { generatedAccessToken, generatedRefreshToken } = await generateAccessAndRefreshTokens(userData.id);
+    const { generatedAccessToken, generatedRefreshToken } = await generateAccessAndRefreshTokens(userData.id, userData.role);
 
     // Create safe user object (excluding sensitive data)
     const safeUser = {
@@ -160,7 +141,7 @@ export const signIn = asyncHandler(async (req: Request, res: Response): Promise<
       .status(200)
       .cookie('accessToken', generatedAccessToken, options)
       .cookie('refreshToken', generatedRefreshToken, options)
-      .json(new ApiResponse(200, user, 'User signed in successfully'));
+      .json(new ApiResponseUtils(200, user, 'User signed in successfully'));
   } catch (error) {
     handleError(res, error, 'Something went wrong while signing in');
   }
@@ -196,7 +177,7 @@ export const signOut = async (req: Request, res: Response): Promise<void> => {
       .status(200)
       .clearCookie('accessToken', cookieOptions)
       .clearCookie('refreshToken', cookieOptions)
-      .json(new ApiResponse(200, {}, 'User logged out successfully'));
+      .json(new ApiResponseUtils(200, {}, 'User logged out successfully'));
   } catch (error) {
     handleError(res, error, 'Internal server error');
   }
@@ -224,7 +205,7 @@ export const refreshAccessToken = async (req: Request, res: Response): Promise<v
       throw new ApiError(401, 'Invalid refresh token');
     }
 
-    const { generatedAccessToken, generatedRefreshToken } = await generateAccessAndRefreshTokens(user.rows[0].id);
+    const { generatedAccessToken, generatedRefreshToken } = await generateAccessAndRefreshTokens(user.rows[0].id, user.rows[0].role);
 
     const options = {
       httpOnly: true,
@@ -236,7 +217,7 @@ export const refreshAccessToken = async (req: Request, res: Response): Promise<v
       .cookie('accessToken', generatedAccessToken, options)
       .cookie('refreshToken', generatedRefreshToken, options)
       .json(
-        new ApiResponse(
+        new ApiResponseUtils(
           200,
           { accessToken: generatedAccessToken, refreshToken: generatedRefreshToken },
           'Access token refreshed',
@@ -259,14 +240,14 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void> =>
     const {email} = req.body;
 
     // Validate required fields
-    const validation = validateRequiredFields({ email });
+    const validation = validateRequiredFieldsUtils({ email });
     if (!validation.isValid) {
       sendResponse(res, 400, {}, validation.error || 'All field are required');
       return;
     }
 
     // Verify user exists
-    const { userData } = await checkUserExists(email);
+    const { userData } = await checkUserExistsUtils(email);
     if (userData.is_verified) {
       sendResponse(res, 400, {}, 'User is already verified');
       return;
@@ -307,14 +288,14 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
     const { email } = req.body;
 
     // Validate required fields
-    const validation = validateRequiredFields({ email });
+    const validation = validateRequiredFieldsUtils({ email });
     if (!validation.isValid) {
       sendResponse(res, 400, {}, validation.error || 'Email field are required');
       return;
     }
 
     // Verify user exists and is verified
-    const { userData } = await checkUserExists(email);
+    const { userData } = await checkUserExistsUtils(email);
     if (!userData.is_verified) {
       sendResponse(res, 400, {}, 'User is not verified');
       return;
@@ -356,14 +337,14 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
     const {email, otp} = req.body;
 
     // Validate required fields
-    const validation = validateRequiredFields({ email, otp });
+    const validation = validateRequiredFieldsUtils({ email, otp });
     if (!validation.isValid) {
       sendResponse(res, 400, {}, validation.error || 'All field are required');
       return;
     }
 
     // Verify user exists
-    const { userData } = await checkUserExists(email);
+    const { userData } = await checkUserExistsUtils(email);
 
     // Retrieve the latest OTP for the user
     const otpResult = await pool.query(
@@ -404,14 +385,14 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
   try {
     // Extract email and newPassword from request
     const {email, newPassword} = req.body;
-    const validation = validateRequiredFields({ email, newPassword });
+    const validation = validateRequiredFieldsUtils({ email, newPassword });
     if (!validation.isValid) {
       sendResponse(res, 400, {}, validation.error || 'All fields are required');
       return;
     }
 
     // Verify user exists and is verified
-    const { userData } = await checkUserExists(email);
+    const { userData } = await checkUserExistsUtils(email);
     if (!userData.is_verified) {
       sendResponse(res, 400, {}, 'User is not verified');
       return;
@@ -441,14 +422,14 @@ export const changePassword = async (req: Request, res: Response): Promise<void>
   try {
     // Extract email and newPassword from request
     const {email, currentPassword, newPassword} = req.body;
-    const validation = validateRequiredFields({ email, currentPassword, newPassword });
+    const validation = validateRequiredFieldsUtils({ email, currentPassword, newPassword });
     if (!validation.isValid) {
       sendResponse(res, 400, {}, validation.error || 'All fields are required');
       return;
     }
 
     // Verify user exists
-    const { userData } = await checkUserExists(email);
+    const { userData } = await checkUserExistsUtils(email);
 
     // Verify password
     const isPasswordCorrect = await verifyPassword(currentPassword, userData.password);
