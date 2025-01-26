@@ -6,10 +6,8 @@
 
 import { Request, Response } from 'express';
 import pool from '../db/db';
-import { generateAuthTokenUtils } from '../utils/generate-auth-token.utils';
 import asyncHandlerUtils from '../utils/async-handler.utils';
 import uploadOnCloudinary from '../utils/cloudinary.utils';
-import { generateRefreshTokenUtils } from '../utils/generate-refresh-token.utils';
 import ApiError, { handleError } from '../utils/api-error.utils';
 import ApiResponseUtils, { sendResponse } from '../utils/api-response.utils';
 import jwt from 'jsonwebtoken';
@@ -23,7 +21,6 @@ import { checkUserExistsUtils } from '../utils/check-user-exists.utils';
 import { addMinutesToDate, otpGenerator } from '../utils/otp-generator.utils';
 import { sendForgotOtpEmail } from '../emails/send-forgot-otp-email';
 import { sendEmailVerificationEmail } from '../emails/send-email-verification-email';
-import { Role } from '../types/role.type';
 import { generateAccessAndRefreshTokens } from '../utils/generate-access-and-refresh-tokens.utils';
 
 // Otp generator options
