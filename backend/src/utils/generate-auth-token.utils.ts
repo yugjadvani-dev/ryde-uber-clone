@@ -9,7 +9,7 @@ import { Role } from '../types/role.type';
 /**
  * Generates a JWT access token for a user
  * @param userId - The unique identifier of the user
- * @param role - The role of the user (e.g., 'user', 'admin')
+ * @param role - The role of the user (e.g., 'user', 'admin', 'driver')
  * @returns JWT access token string
  * @throws Error if ACCESS_TOKEN_SECRET is not configured
  */

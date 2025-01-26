@@ -21,7 +21,7 @@ import {
   verifyEmail, verifyOTP,
 } from '../controllers/auth.controllers';
 import upload from '../middlewares/multer.middleware';
-import verifyJWT from '../middlewares/verifyJWT';
+import verifyJWTMiddleware from '../middlewares/verifyJWT.middleware';
 
 // Initialize auth router
 const router = express.Router();
@@ -67,7 +67,7 @@ router.post(
  */
 router.post(
   '/sign-out',
-  verifyJWT, // Verify user is authenticated
+  verifyJWTMiddleware, // Verify user is authenticated
   signOut, // Process user sign out
 );
 
@@ -78,7 +78,7 @@ router.post(
 
 router.post(
   '/change-password',
-  verifyJWT, // Verify user is authenticated
+  verifyJWTMiddleware, // Verify user is authenticated
   changePassword, // Change Password
 )
 

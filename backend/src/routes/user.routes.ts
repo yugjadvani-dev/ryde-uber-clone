@@ -15,7 +15,7 @@ import { deleteProfileById, getAllUsers, getUserById, updateProfileById } from '
 import adminMiddleware from '../middlewares/admin.middleware';
 import nonAdminMiddleware from '../middlewares/non-admin.middleware';
 import upload from '../middlewares/multer.middleware';
-import verifyJWT from '../middlewares/verifyJWT';
+import verifyJWTMiddleware from '../middlewares/verifyJWT.middleware';
 
 // Initialize user router
 const router = express.Router();
@@ -36,7 +36,7 @@ router.get(
  */
 router.get(
   '/:id',
-  verifyJWT, // Verify user is authenticated
+  verifyJWTMiddleware, // Verify user is authenticated
   getUserById, // Get single user profile
 );
 

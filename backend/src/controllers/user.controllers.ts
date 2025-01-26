@@ -33,7 +33,7 @@ const handleAvatarOperations = async (existingAvatarUrl: string | null): Promise
 export const getAllUsers = async (_: Request, res: Response): Promise<void> => {
   try {
     const users = await pool.query(
-      `SELECT id, avatar, firstname, lastname, email, phone_number, is_verified, created_at 
+      `SELECT id, avatar, firstname, lastname, email, phone_number, is_verified, created_at, updated_at 
        FROM users 
        WHERE is_verified = true AND role = 'user'`,
     );
@@ -61,7 +61,7 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
     }
 
     const user = await pool.query(
-      `SELECT id, avatar, firstname, lastname, email, phone_number, is_verified, created_at 
+      `SELECT id, avatar, firstname, lastname, email, phone_number, is_verified, created_at, updated_at
        FROM users 
        WHERE id = $1 LIMIT 1`,
       [id],
@@ -103,7 +103,7 @@ export const updateProfileById = async (req: Request, res: Response): Promise<vo
 
     // Check if profile exists
     const existProfile = await pool.query(
-      `SELECT id, avatar, firstname, lastname, email, phone_number, is_verified, created_at 
+      `SELECT id, avatar, firstname, lastname, email, phone_number, is_verified, created_at, updated_at
        FROM users 
        WHERE id = $1 LIMIT 1`,
       [id],
@@ -137,7 +137,7 @@ export const updateProfileById = async (req: Request, res: Response): Promise<vo
       `UPDATE users 
        SET firstname = $1, lastname = $2, phone_number = $3, avatar = $4 
        WHERE id = $5 
-       RETURNING id, avatar, firstname, lastname, email, phone_number, is_verified, created_at`,
+       RETURNING id, avatar, firstname, lastname, email, phone_number, is_verified, created_at, updated_at`,
       [firstname, lastname, phone_number, avatar, id],
     );
 
@@ -165,7 +165,7 @@ export const deleteProfileById = async (req: Request, res: Response): Promise<vo
 
     // Check if profile exists
     const existProfile = await pool.query(
-      `SELECT id, avatar, firstname, lastname, email, phone_number, is_verified, created_at 
+      `SELECT id, avatar, firstname, lastname, email, phone_number, is_verified, created_at, updated_at 
        FROM users 
        WHERE id = $1 LIMIT 1`,
       [id],

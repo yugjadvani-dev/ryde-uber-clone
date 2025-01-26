@@ -37,8 +37,8 @@ const nonAdminMiddleware = (req: Request, res: Response, next: NextFunction): vo
     // Verify and decode the JWT token
     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET as string) as JwtPayload;
 
-    // Check if user is an admin
-    if (!decoded || decoded.role === 'admin') {
+    // Check if user is an admin or driver
+    if (!decoded || decoded.role === 'admin' || decoded.role === 'driver') {
       sendResponse(res, 403, {}, 'Access denied. This route is only accessible to passengers')
       return;
     }

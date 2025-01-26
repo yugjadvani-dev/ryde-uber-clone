@@ -19,11 +19,11 @@ import { handleError } from '../utils/api-error.utils';
  *
  * @example
  * // In routes file:
- * router.get('/protected-route', verifyJWT, protectedController);
+ * router.get('/protected-route', verifyJWTMiddleware, protectedController);
  *
  * @throws {401} If token is missing, invalid, or user not found
  */
-const verifyJWT = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+const verifyJWTMiddleware = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   // Skip verification for sign-out endpoint
   if (req.path === '/sign-out') {
     return next();
@@ -56,4 +56,4 @@ const verifyJWT = async (req: Request, res: Response, next: NextFunction): Promi
   }
 };
 
-export default verifyJWT;
+export default verifyJWTMiddleware;

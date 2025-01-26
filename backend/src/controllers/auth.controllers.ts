@@ -11,7 +11,7 @@ import uploadOnCloudinary from '../utils/cloudinary.utils';
 import ApiError, { handleError } from '../utils/api-error.utils';
 import ApiResponseUtils, { sendResponse } from '../utils/api-response.utils';
 import jwt from 'jsonwebtoken';
-import { sendUserWelcomeEmail } from '../emails/send-user-welcome-email';
+import { sendUserWelcomeEmail } from '../emails/send-user-welcome.email';
 import {
   hashPassword,
   verifyPassword,
@@ -19,8 +19,8 @@ import {
 import { validateRequiredFieldsUtils } from '../utils/validate-required-fields.utils';
 import { checkUserExistsUtils } from '../utils/check-user-exists.utils';
 import { addMinutesToDate, otpGenerator } from '../utils/otp-generator.utils';
-import { sendForgotOtpEmail } from '../emails/send-forgot-otp-email';
-import { sendEmailVerificationEmail } from '../emails/send-email-verification-email';
+import { sendForgotOtpEmail } from '../emails/send-forgot-otp.email';
+import { sendEmailVerificationEmail } from '../emails/send-email-verification.email';
 import { generateAccessAndRefreshTokens } from '../utils/generate-access-and-refresh-tokens.utils';
 
 // Otp generator options
